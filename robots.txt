@@ -1,0 +1,33 @@
+# Robots.txt - Raul Ricco
+# Site: https://raulricco.com.br
+
+User-agent: *
+Allow: /
+
+# Páginas importantes (garantir indexação)
+Allow: /index.html
+Allow: /sobre.html
+Allow: /contato.html
+Allow: /politica-de-privacidade.html
+Allow: /termos-de-uso.html
+
+# Recursos estáticos
+Allow: /css/
+Allow: /js/
+Allow: /images/
+
+# Sitemap
+Sitemap: https://raulricco.com.br/sitemap.xml
+
+# Bots específicos
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /images/
+
+User-agent: Bingbot
+Allow: /
+
+# Tempo de espera entre requisições (em segundos)
+Crawl-delay: 1

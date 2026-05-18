@@ -1,0 +1,5 @@
+.DS_Store
+.claude/
+.agents/
+flow-produtividade/worker/node_modules/
+flow-produtividade/worker/.wrangler/

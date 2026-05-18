@@ -1,0 +1,13 @@
+name = "flow-produtividade-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "flow-produtividade"
+database_id = "dd55fe0a-5cdc-4086-9818-f7a9d4cb039c"
+
+[vars]
+ENVIRONMENT = "production"
+FRONTEND_URL = "https://flow-produtividade.pages.dev"

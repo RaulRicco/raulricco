@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Produtividade</title>
+    <meta name="description" content="Sistema completo de produtividade com timer Pomodoro, tarefas, metas e histórico.">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a202c;
+            --secondary: #2d3748;
+            --accent: #63b3ed;
+            --accent-dark: #3182ce;
+            --text: #e2e8f0;
+            --text-muted: #a0aec0;
+            --success: #48bb78;
+            --danger: #f56565;
+            --warning: #ed8936;
+        }
+        body { background-color: var(--primary); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar { background-color: var(--secondary); transition: all 0.3s; }
+        .active-link { background-color: rgba(99,179,237,0.2); border-left: 3px solid var(--accent); }
+        .pomodoro-circle {
+            width: 240px; height: 240px; border-radius: 50%;
+            background: conic-gradient(var(--accent) 0%, transparent 0%);
+            display: flex; align-items: center; justify-content: center;
+            position: relative; transition: background 0.5s;
+        }
+        .pomodoro-circle::before {
+            content: ''; width: 220px; height: 220px; border-radius: 50%;
+            background-color: var(--secondary); position: absolute; z-index: 1;
+        }
+        .pomodoro-time { position: relative; z-index: 2; }
+        .task-item { transition: all 0.3s; border-left: 3px solid transparent; }
+        .task-item:hover { background-color: rgba(255,255,255,0.05); }
+        .task-item.priority-high { border-left-color: var(--danger); }
+        .task-item.priority-medium { border-left-color: var(--warning); }
+        .task-item.priority-low { border-left-color: var(--accent); }
+        .task-item.completed .task-text { text-decoration: line-through; color: var(--text-muted); }
+        .progress-bar { height: 6px; border-radius: 3px; background-color: rgba(255,255,255,0.1); overflow: hidden; }
+        .progress-value { height: 100%; border-radius: 3px; width: 0%; background-color: var(--accent); transition: width 0.4s; }
+        .stat-card { background-color: var(--secondary); border-radius: 8px; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-4px); }
+        .control-btn {
+            width: 45px; height: 45px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background-color: rgba(255,255,255,0.1); cursor: pointer; transition: all 0.3s;
+        }
+        .control-btn:hover { background-color: rgba(255,255,255,0.2); }
+        .control-btn.primary { background-color: var(--accent); color: white; }
+        .control-btn.primary:hover { background-color: var(--accent-dark); }
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6); display: flex;
+            align-items: center; justify-content: center; z-index: 1000;
+            opacity: 0; visibility: hidden; transition: all 0.3s;
+        }
+        .modal.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            background-color: var(--secondary); border-radius: 12px;
+            width: 90%; max-width: 520px; transform: translateY(20px);
+            transition: all 0.3s; overflow: hidden; max-height: 90vh; overflow-y: auto;
+        }
+        .modal.active .modal-content { transform: translateY(0); }
+        .slider { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px; background: var(--primary); outline: none; margin-top: 8px; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+        .quote-slide { opacity: 0; transition: opacity 1s; position: absolute; top: 0; left: 0; right: 0; }
+        .quote-slide.active { opacity: 1; position: relative; }
+        .nav-tab { cursor: pointer; padding: 0.5rem 1rem; border-radius: 8px; transition: all 0.2s; font-size: 0.875rem; color: var(--text-muted); }
+        .nav-tab.active { background: rgba(99,179,237,0.15); color: var(--accent); font-weight: 600; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .goal-card { background: var(--secondary); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+        .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
+        .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .bar { background: var(--accent); border-radius: 3px 3px 0 0; width: 100%; min-height: 2px; transition: height 0.5s; }
+        .bar-label { font-size: 0.65rem; color: var(--text-muted); }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .task-complete-anim { animation: pulse 0.4s; }
+        @media (max-width: 768px) {
+            .pomodoro-circle { width: 180px; height: 180px; }
+            .pomodoro-circle::before { width: 160px; height: 160px; }
+            .sidebar { width: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; overflow: hidden; }
+            .sidebar.expanded { width: 250px; }
+        }
+    </style>
+</head>
+<body>
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 h-full overflow-y-auto flex-shrink-0">
+        <div class="p-4 flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-brain text-2xl text-blue-400 mr-2"></i>
+                <h1 class="text-xl font-bold">Modo Foco</h1>
+            </div>
+            <button class="toggle-sidebar lg:hidden"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="mt-6 px-4">
+            <div class="nav-tab active flex items-center px-4 py-3 mb-1" data-section="dashboard">
+                <i class="fas fa-chart-line mr-3"></i><span>Dashboard</span>
+            </div>
+            <div class="nav-tab flex items-center px-4 py-3 mb-1" data-section="goals">
+                <i class="fas fa-bullseye mr-3"></i><span>Metas</span>
+            </div>
+            <div class="nav-tab flex items-center px-4 py-3 mb-1" data-section="history">
+                <i class="fas fa-chart-bar mr-3"></i><span>Histórico</span>
+            </div>
+        </div>
+        <div class="mt-auto p-4 pt-8">
+            <div id="user-info" class="px-4 py-3 mb-2 text-sm text-gray-400"></div>
+            <button id="logout-btn" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 w-full text-left text-red-400">
+                <i class="fas fa-sign-out-alt mr-3"></i><span>Sair</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="flex-1 overflow-y-auto bg-gray-900">
+        <header class="bg-gray-800 py-4 px-6 flex items-center justify-between sticky top-0 z-10">
+            <div class="flex items-center">
+                <button class="toggle-sidebar mr-4 lg:hidden"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-xl font-bold" id="section-title">Flow Produtividade</h2>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="header-user" class="text-sm text-gray-400 hidden md:block"></span>
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                    <i class="fas fa-user text-sm"></i>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6">
+
+            <!-- DASHBOARD -->
+            <div class="section active" id="section-dashboard">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    <!-- Timer -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                                <i class="fas fa-clock text-blue-400 mr-2"></i>Timer Pomodoro
+                            </h3>
+                            <div class="flex flex-col items-center">
+                                <div class="pomodoro-circle" id="pomodoro-circle">
+                                    <div class="pomodoro-time text-center">
+                                        <span id="timer" class="text-4xl font-bold">25:00</span>
+                                        <p class="text-gray-400 text-sm mt-1" id="timer-label">Sessão de Foco</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-3 mt-5">
+                                    <div class="control-btn" id="reset-btn" title="Reiniciar"><i class="fas fa-redo-alt"></i></div>
+                                    <div class="control-btn primary" id="start-btn"><i class="fas fa-play"></i></div>
+                                    <div class="control-btn" id="settings-btn" title="Configurações"><i class="fas fa-cog"></i></div>
+                                </div>
+                                <div class="mt-6 w-full">
+                                    <div class="flex justify-between text-sm text-gray-400 mb-1">
+                                        <span>Sessões hoje</span>
+                                        <span id="sessions-count">0/8</span>
+                                    </div>
+                                    <div class="progress-bar"><div class="progress-value" id="sessions-progress"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                                <i class="fas fa-chart-bar text-blue-400 mr-2"></i>Hoje
+                            </h3>
+                            <div class="grid grid-cols-1 gap-4">
+                                <div class="stat-card p-4">
+                                    <p class="text-gray-400 mb-1 text-sm">Tempo em foco</p>
+                                    <p class="text-2xl font-bold" id="stat-focus-time">0h 0m</p>
+                                </div>
+                                <div class="stat-card p-4">
+                                    <p class="text-gray-400 mb-1 text-sm">Taxa de conclusão</p>
+                                    <p class="text-2xl font-bold" id="stat-completion">0%</p>
+                                </div>
+                                <div class="stat-card p-4">
+                                    <p class="text-gray-400 mb-1 text-sm">Sessões completadas</p>
+                                    <p class="text-2xl font-bold" id="stat-sessions">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tasks + extras -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                            <div class="flex justify-between items-center mb-5">
+                                <h3 class="text-lg font-semibold flex items-center">
+                                    <i class="fas fa-tasks text-blue-400 mr-2"></i>Tarefas de Hoje
+                                </h3>
+                                <span class="text-gray-400 text-sm" id="task-counter">0 tarefas</span>
+                            </div>
+                            <div class="mb-4 flex gap-2">
+                                <input type="text" id="new-task-input" placeholder="Adicionar nova tarefa..." class="flex-1 bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:border-blue-400 transition-all text-white">
+                                <select id="task-priority" class="bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:border-blue-400 text-white text-sm">
+                                    <option value="low">Baixa</option>
+                                    <option value="medium">Média</option>
+                                    <option value="high" selected>Alta</option>
+                                </select>
+                                <button id="add-task-btn" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="tasks-list"></div>
+                            <div class="mt-4 text-center text-gray-400 italic text-sm" id="empty-state">
+                                Sem tarefas para hoje. Adicione sua primeira tarefa acima!
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-gray-800 rounded-lg p-6">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                                    <i class="fas fa-bullseye text-blue-400 mr-2"></i>Meta do Dia
+                                </h3>
+                                <input type="text" id="daily-goal-input" placeholder="Defina sua meta principal..." class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:border-blue-400 transition-all text-white mb-3">
+                                <button id="save-daily-goal" class="text-sm text-blue-400 hover:text-blue-300">Salvar meta</button>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-6">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                                    <i class="fas fa-quote-right text-blue-400 mr-2"></i>Inspiração
+                                </h3>
+                                <div style="position:relative; min-height: 80px;">
+                                    <div class="quote-slide active">
+                                        <p class="italic mb-2 text-sm">"Não é que tenhamos pouco tempo, mas que desperdiçamos muito."</p>
+                                        <p class="text-right text-blue-400 text-xs">— Sêneca</p>
+                                    </div>
+                                    <div class="quote-slide">
+                                        <p class="italic mb-2 text-sm">"Somos o que repetidamente fazemos. A excelência não é um ato, mas um hábito."</p>
+                                        <p class="text-right text-blue-400 text-xs">— Aristóteles</p>
+                                    </div>
+                                    <div class="quote-slide">
+                                        <p class="italic mb-2 text-sm">"Você tem poder sobre sua mente – não sobre eventos externos. Perceba isso, e encontrará força."</p>
+                                        <p class="text-right text-blue-400 text-xs">— Marco Aurélio</p>
+                                    </div>
+                                    <div class="quote-slide">
+                                        <p class="italic mb-2 text-sm">"Concentre toda sua atenção no trabalho em mãos. Os raios solares não queimam até serem focados."</p>
+                                        <p class="text-right text-blue-400 text-xs">— Alexander Graham Bell</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METAS -->
+            <div class="section" id="section-goals">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Metas</h3>
+                    <button id="new-goal-btn" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all text-sm">
+                        <i class="fas fa-plus mr-2"></i>Nova meta
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gray-800 rounded-lg p-5">
+                        <h4 class="font-semibold mb-4 text-blue-400">Semanais</h4>
+                        <div id="weekly-goals"></div>
+                        <div class="text-gray-500 text-sm italic" id="empty-weekly">Nenhuma meta semanal.</div>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-5">
+                        <h4 class="font-semibold mb-4 text-blue-400">Mensais</h4>
+                        <div id="monthly-goals"></div>
+                        <div class="text-gray-500 text-sm italic" id="empty-monthly">Nenhuma meta mensal.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTÓRICO -->
+            <div class="section" id="section-history">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Histórico</h3>
+                    <select id="history-days" class="bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white text-sm">
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="14">Últimos 14 dias</option>
+                        <option value="30">Últimos 30 dias</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="stat-card p-5">
+                        <p class="text-gray-400 text-sm mb-1">Total em foco</p>
+                        <p class="text-2xl font-bold" id="hist-focus">0h 0m</p>
+                    </div>
+                    <div class="stat-card p-5">
+                        <p class="text-gray-400 text-sm mb-1">Sessões completadas</p>
+                        <p class="text-2xl font-bold" id="hist-sessions">0</p>
+                    </div>
+                    <div class="stat-card p-5">
+                        <p class="text-gray-400 text-sm mb-1">Tarefas concluídas</p>
+                        <p class="text-2xl font-bold" id="hist-tasks">0</p>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h4 class="font-semibold mb-4">Minutos de foco por dia</h4>
+                    <div class="bar-chart" id="focus-chart"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Modal Configurações Timer -->
+<div class="modal" id="settings-modal">
+    <div class="modal-content">
+        <div class="p-5 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="font-bold text-lg">Configurações do Timer</h3>
+            <button id="close-settings" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-5 space-y-5">
+            <div>
+                <label class="block text-gray-300 mb-1 text-sm">Tempo de Foco</label>
+                <div class="flex justify-between text-xs text-gray-400 mb-1"><span>15 min</span><span id="focus-time-display" class="text-white">25 min</span><span>60 min</span></div>
+                <input type="range" id="focus-time" class="slider" min="15" max="60" step="5" value="25">
+            </div>
+            <div>
+                <label class="block text-gray-300 mb-1 text-sm">Intervalo Curto</label>
+                <div class="flex justify-between text-xs text-gray-400 mb-1"><span>3 min</span><span id="short-break-display" class="text-white">5 min</span><span>10 min</span></div>
+                <input type="range" id="short-break" class="slider" min="3" max="10" step="1" value="5">
+            </div>
+            <div>
+                <label class="block text-gray-300 mb-1 text-sm">Intervalo Longo</label>
+                <div class="flex justify-between text-xs text-gray-400 mb-1"><span>15 min</span><span id="long-break-display" class="text-white">15 min</span><span>30 min</span></div>
+                <input type="range" id="long-break" class="slider" min="15" max="30" step="5" value="15">
+            </div>
+            <div>
+                <label class="block text-gray-300 mb-1 text-sm">Sessões por dia</label>
+                <div class="flex justify-between text-xs text-gray-400 mb-1"><span>1</span><span id="sessions-display" class="text-white">8</span><span>10</span></div>
+                <input type="range" id="sessions-count-input" class="slider" min="1" max="10" step="1" value="8">
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-700 flex justify-end">
+            <button id="apply-settings" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-lg">Aplicar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Meta -->
+<div class="modal" id="goal-modal">
+    <div class="modal-content">
+        <div class="p-5 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="font-bold text-lg">Nova Meta</h3>
+            <button id="close-goal-modal" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">Título da meta</label>
+                <input type="text" id="goal-title" placeholder="Ex: Completar 20 sessões de foco" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-blue-400">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">Período</label>
+                <div class="flex gap-3">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="goal-period" value="weekly" checked class="accent-blue-400"> Semanal
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="goal-period" value="monthly" class="accent-blue-400"> Mensal
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">Valor alvo (%)</label>
+                <input type="number" id="goal-target" value="100" min="1" max="1000" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-blue-400">
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-700 flex justify-end gap-3">
+            <button id="cancel-goal" class="text-gray-400 hover:text-white py-2 px-4">Cancelar</button>
+            <button id="save-goal" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-lg">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/goals.js"></script>
+<script src="js/stats.js"></script>
+<script>
+    const API = window.FLOW_API_URL || 'https://flow-produtividade-api.raulriccoads.workers.dev';
+
+    // Auth guard
+    const token = localStorage.getItem('flow_token');
+    if (!token) { window.location.href = 'index.html'; }
+
+    const user = JSON.parse(localStorage.getItem('flow_user') || '{}');
+    document.getElementById('user-info').textContent = user.name || '';
+    document.getElementById('header-user').textContent = user.name || '';
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('flow_token');
+        localStorage.removeItem('flow_user');
+        window.location.href = 'index.html';
+    });
+
+    // Navigation
+    const sectionTitles = { dashboard: 'Flow Produtividade', goals: 'Metas', history: 'Histórico' };
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            tab.classList.add('active');
+            const sec = tab.dataset.section;
+            document.getElementById('section-' + sec).classList.add('active');
+            document.getElementById('section-title').textContent = sectionTitles[sec];
+            if (sec === 'history') loadStats();
+            if (sec === 'goals') loadGoals();
+        });
+    });
+
+    // Sidebar toggle
+    document.querySelectorAll('.toggle-sidebar').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('expanded');
+        });
+    });
+
+    // Google OAuth token on redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthToken = urlParams.get('token');
+    if (oauthToken) {
+        localStorage.setItem('flow_token', oauthToken);
+        window.history.replaceState({}, '', 'app.html');
+        location.reload();
+    }
+
+    // Daily goal
+    const savedDailyGoal = localStorage.getItem('flow_daily_goal_' + new Date().toISOString().slice(0,10));
+    if (savedDailyGoal) document.getElementById('daily-goal-input').value = savedDailyGoal;
+    document.getElementById('save-daily-goal').addEventListener('click', () => {
+        const val = document.getElementById('daily-goal-input').value.trim();
+        if (val) localStorage.setItem('flow_daily_goal_' + new Date().toISOString().slice(0,10), val);
+    });
+
+    // Quote carousel
+    const quoteSlides = document.querySelectorAll('.quote-slide');
+    let currentQuote = 0;
+    setInterval(() => {
+        quoteSlides[currentQuote].classList.remove('active');
+        currentQuote = (currentQuote + 1) % quoteSlides.length;
+        quoteSlides[currentQuote].classList.add('active');
+    }, 15000);
+
+    // Init
+    initTimer(API, token);
+    initTasks(API, token);
+    loadGoals();
+</script>
+</body>
+</html>
