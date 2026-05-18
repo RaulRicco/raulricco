@@ -111,6 +111,9 @@ function initTasks(API, token) {
     input.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
     loadTasks();
+
+    // Expõe reload para uso externo (ex: Novo Dia)
+    window._reloadTasks = loadTasks;
 }
 
 window.initTasks = initTasks;

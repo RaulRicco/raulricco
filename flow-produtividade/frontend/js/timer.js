@@ -213,6 +213,13 @@ function initTimer(API, token) {
     loadTodaySessions();
     updateDisplay();
     updateSessionsUI();
+
+    // Expõe reset para uso externo (ex: Novo Dia)
+    window._resetTimer = () => {
+        sessionsToday = 0;
+        resetTimer();
+        updateSessionsUI();
+    };
 }
 
 window.initTimer = initTimer;

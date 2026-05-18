@@ -112,6 +112,9 @@
         </div>
         <div class="mt-auto p-4 pt-8">
             <div id="user-info" class="px-4 py-3 mb-2 text-sm text-gray-400"></div>
+            <button id="new-day-btn" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 w-full text-left text-green-400 mb-1">
+                <i class="fas fa-sun mr-3"></i><span>Novo Dia</span>
+            </button>
             <button id="logout-btn" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 w-full text-left text-red-400">
                 <i class="fas fa-sign-out-alt mr-3"></i><span>Sair</span>
             </button>
@@ -376,6 +379,32 @@
     </div>
 </div>
 
+<!-- Modal Novo Dia -->
+<div class="modal" id="new-day-modal">
+    <div class="modal-content">
+        <div class="p-5 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="font-bold text-lg">Iniciar Novo Dia</h3>
+            <button id="close-new-day-modal" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-5">
+            <p class="text-gray-300 mb-3">Isso irá:</p>
+            <ul class="text-sm text-gray-400 space-y-2 mb-4">
+                <li><i class="fas fa-check text-green-400 mr-2"></i>Zerar o contador de sessões do dia</li>
+                <li><i class="fas fa-check text-green-400 mr-2"></i>Reiniciar o timer</li>
+                <li><i class="fas fa-arrow-right text-blue-400 mr-2"></i>Mover tarefas <strong class="text-white">não concluídas</strong> para hoje</li>
+                <li><i class="fas fa-times text-gray-500 mr-2"></i>Tarefas concluídas ficam no histórico</li>
+            </ul>
+            <p id="pending-tasks-info" class="text-sm text-yellow-400 italic"></p>
+        </div>
+        <div class="p-4 border-t border-gray-700 flex justify-end gap-3">
+            <button id="cancel-new-day" class="text-gray-400 hover:text-white py-2 px-4">Cancelar</button>
+            <button id="confirm-new-day" class="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg">
+                <i class="fas fa-sun mr-2"></i>Começar o dia
+            </button>
+        </div>
+    </div>
+</div>
+
 <script src="js/auth.js"></script>
 <script src="js/timer.js"></script>
 <script src="js/tasks.js"></script>
@@ -446,6 +475,75 @@
         currentQuote = (currentQuote + 1) % quoteSlides.length;
         quoteSlides[currentQuote].classList.add('active');
     }, 15000);
+
+    // Novo Dia
+    const newDayModal = document.getElementById('new-day-modal');
+    const newDayBtn = document.getElementById('new-day-btn');
+    const closeNewDayModal = document.getElementById('close-new-day-modal');
+    const cancelNewDay = document.getElementById('cancel-new-day');
+    const confirmNewDay = document.getElementById('confirm-new-day');
+
+    async function openNewDayModal() {
+        // Busca tarefas de ontem (e dias anteriores) não concluídas
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().slice(0, 10);
+        try {
+            const res = await apiRequest(`${API}/tasks?date=${yesterdayStr}`);
+            if (res && res.ok) {
+                const tasks = await res.json();
+                const pending = tasks.filter(t => !t.completed);
+                const infoEl = document.getElementById('pending-tasks-info');
+                if (pending.length > 0) {
+                    infoEl.textContent = `${pending.length} tarefa(s) não concluída(s) serão trazidas para hoje.`;
+                } else {
+                    infoEl.textContent = 'Nenhuma tarefa pendente do dia anterior.';
+                }
+            }
+        } catch(e) {}
+        newDayModal.classList.add('active');
+    }
+
+    async function executeNewDay() {
+        const today = new Date().toISOString().slice(0, 10);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+        confirmNewDay.disabled = true;
+        confirmNewDay.textContent = 'Aguarde...';
+
+        try {
+            // Busca tarefas não concluídas de ontem
+            const res = await apiRequest(`${API}/tasks?date=${yesterdayStr}`);
+            if (res && res.ok) {
+                const tasks = await res.json();
+                const pending = tasks.filter(t => !t.completed);
+
+                // Recria cada tarefa pendente com a data de hoje
+                for (const task of pending) {
+                    await apiRequest(`${API}/tasks`, {
+                        method: 'POST',
+                        body: JSON.stringify({ text: task.text, priority: task.priority, date: today })
+                    });
+                }
+            }
+        } catch(e) {}
+
+        newDayModal.classList.remove('active');
+        confirmNewDay.disabled = false;
+        confirmNewDay.innerHTML = '<i class="fas fa-sun mr-2"></i>Começar o dia';
+
+        // Reinicia timer e recarrega tarefas do dia
+        if (window._resetTimer) window._resetTimer();
+        if (window._reloadTasks) window._reloadTasks();
+    }
+
+    newDayBtn.addEventListener('click', openNewDayModal);
+    closeNewDayModal.addEventListener('click', () => newDayModal.classList.remove('active'));
+    cancelNewDay.addEventListener('click', () => newDayModal.classList.remove('active'));
+    newDayModal.addEventListener('click', e => { if (e.target === newDayModal) newDayModal.classList.remove('active'); });
+    confirmNewDay.addEventListener('click', executeNewDay);
 
     // Init
     initTimer(API, token);
