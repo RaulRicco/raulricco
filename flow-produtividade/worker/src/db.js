@@ -39,14 +39,18 @@ export async function createUser(db, { id, email, passwordHash, googleId, name }
 
 export async function getTasksByDate(db, userId, date) {
   return db.prepare(
-    'SELECT * FROM tasks WHERE user_id = ? AND date = ? ORDER BY created_at ASC'
+    'SELECT * FROM tasks WHERE user_id = ? AND date = ? ORDER BY sort_order ASC, created_at ASC'
   ).bind(userId, date).all();
 }
 
 export async function createTask(db, { id, userId, text, priority, date }) {
+  const maxRow = await db.prepare(
+    'SELECT MAX(sort_order) as max_order FROM tasks WHERE user_id = ? AND date = ?'
+  ).bind(userId, date).first();
+  const sortOrder = (maxRow?.max_order ?? -1) + 1;
   await db.prepare(
-    'INSERT INTO tasks (id, user_id, text, priority, date) VALUES (?, ?, ?, ?, ?)'
-  ).bind(id, userId, text, priority || 'low', date).run();
+    'INSERT INTO tasks (id, user_id, text, priority, date, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(id, userId, text, priority || 'low', date, sortOrder).run();
   return db.prepare('SELECT * FROM tasks WHERE id = ?').bind(id).first();
 }
 
@@ -56,6 +60,7 @@ export async function updateTask(db, id, userId, fields) {
   if (fields.text !== undefined) { sets.push('text = ?'); vals.push(fields.text); }
   if (fields.completed !== undefined) { sets.push('completed = ?'); vals.push(fields.completed ? 1 : 0); }
   if (fields.priority !== undefined) { sets.push('priority = ?'); vals.push(fields.priority); }
+  if (fields.sort_order !== undefined) { sets.push('sort_order = ?'); vals.push(fields.sort_order); }
   if (sets.length === 0) return null;
   vals.push(id, userId);
   await db.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`).bind(...vals).run();
