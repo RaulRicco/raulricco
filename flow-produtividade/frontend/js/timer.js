@@ -93,7 +93,7 @@ function initTimer(API, token) {
         try {
             await apiRequest(`${API}/sessions`, {
                 method: 'POST',
-                body: JSON.stringify({ mode, duration_minutes: duration })
+                body: JSON.stringify({ mode, duration_minutes: duration, date: brDate() })
             });
         } catch (e) {
             // Não bloqueia o timer por falha de rede
@@ -200,8 +200,7 @@ function initTimer(API, token) {
     // Carregar sessões do dia já registradas
     async function loadTodaySessions() {
         try {
-            const today = new Date().toISOString().slice(0, 10);
-            const res = await apiRequest(`${API}/sessions?date=${today}`);
+            const res = await apiRequest(`${API}/sessions?date=${brDate()}`);
             if (res && res.ok) {
                 const sessions = await res.json();
                 sessionsToday = sessions.filter(s => s.mode === 'focus').length;
@@ -214,7 +213,16 @@ function initTimer(API, token) {
     updateDisplay();
     updateSessionsUI();
 
-    // Expõe reset para uso externo (ex: Novo Dia)
+    // Botão de reset do dia — zera contador e reinicia timer
+    const resetDayBtn = document.getElementById('reset-day-btn');
+    if (resetDayBtn) {
+        resetDayBtn.addEventListener('click', () => {
+            sessionsToday = 0;
+            resetTimer();
+            updateSessionsUI();
+        });
+    }
+
     window._resetTimer = () => {
         sessionsToday = 0;
         resetTimer();

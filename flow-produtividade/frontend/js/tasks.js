@@ -8,8 +8,7 @@ function initTasks(API, token) {
 
     let tasks = [];
     let dragSrcId = null;
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const today = brDate();
 
     async function loadTasks() {
         try {

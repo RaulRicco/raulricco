@@ -10,11 +10,6 @@ async function loadStats() {
     } catch (e) {}
 }
 
-function localDateStr(offsetDays = 0) {
-    const d = new Date();
-    d.setDate(d.getDate() - offsetDays);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
 
 const METRICS = [
     { key: 'hours',      label: 'Horas',      color: '#63b3ed' },
@@ -41,7 +36,7 @@ function renderStats(sessions, tasks, days) {
 
     // Gerar últimos N dias (hora local)
     const dates = [];
-    for (let i = days - 1; i >= 0; i--) dates.push(localDateStr(i));
+    for (let i = days - 1; i >= 0; i--) dates.push(brDate(i));
 
     // Mapas por data
     const minutesByDate = {};
