@@ -186,16 +186,28 @@ function drawLine(metricKey) {
         path.setAttribute('stroke-linecap', 'round');
         svg.appendChild(path);
 
+        // Tooltip HTML
+        const tooltip = document.createElement('div');
+        tooltip.style.cssText = `
+            position:absolute;pointer-events:none;opacity:0;transition:opacity 0.15s;
+            background:#2d3748;border:1px solid #4a5568;border-radius:6px;
+            padding:5px 10px;font-size:0.75rem;color:#e2e8f0;white-space:nowrap;
+            transform:translate(-50%,-100%);margin-top:-8px;z-index:10;
+        `;
+        wrap.style.position = 'relative';
+        wrap.appendChild(tooltip);
+
         // Pontos e tooltips
         values.forEach((v, i) => {
             const cx = xOf(i);
             const cy = yOf(v);
 
-            // Círculo hover (invisível, área clicável maior)
-            const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            hitArea.setAttribute('cx', cx); hitArea.setAttribute('cy', cy);
-            hitArea.setAttribute('r', '12');
-            hitArea.setAttribute('fill', 'transparent');
+            const [, mm, dd] = dates[i].split('-');
+            const valLabel = metricKey === 'hours'
+                ? (v >= 1 ? `${Math.floor(v)}h${Math.round((v % 1) * 60) > 0 ? ` ${Math.round((v % 1) * 60)}m` : ''}` : `${Math.round(v * 60)}m`)
+                : metricKey === 'completion'
+                ? `${v}%`
+                : v;
 
             // Ponto visível
             const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -204,19 +216,38 @@ function drawLine(metricKey) {
             dot.setAttribute('fill', v > 0 ? color : '#4a5568');
             dot.setAttribute('stroke', '#1a202c');
             dot.setAttribute('stroke-width', '1.5');
+            dot.style.cursor = 'pointer';
+            dot.style.transition = 'r 0.15s';
 
-            const [, mm, dd] = dates[i].split('-');
-            const valLabel = metricKey === 'hours'
-                ? (v >= 1 ? `${Math.floor(v)}h${Math.round((v % 1) * 60) > 0 ? ` ${Math.round((v % 1) * 60)}m` : ''}` : `${Math.round(v * 60)}m`)
-                : metricKey === 'completion'
-                ? `${v}%`
-                : v;
-            const tip = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-            tip.textContent = `${dd}/${mm}: ${valLabel}`;
-            dot.appendChild(tip);
+            // Área de hit maior (invisível)
+            const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            hitArea.setAttribute('cx', cx); hitArea.setAttribute('cy', cy);
+            hitArea.setAttribute('r', '12');
+            hitArea.setAttribute('fill', 'transparent');
+            hitArea.style.cursor = 'pointer';
 
-            svg.appendChild(hitArea);
+            const showTip = () => {
+                dot.setAttribute('r', '6');
+                tooltip.textContent = `${dd}/${mm}  ${valLabel}`;
+                // posição relativa ao wrap
+                const svgRect = svg.getBoundingClientRect();
+                const wrapRect = wrap.getBoundingClientRect();
+                const scaleX = svgRect.width / W;
+                const scaleY = svgRect.height / H;
+                tooltip.style.left = `${svgRect.left - wrapRect.left + cx * scaleX}px`;
+                tooltip.style.top  = `${svgRect.top  - wrapRect.top  + cy * scaleY - 10}px`;
+                tooltip.style.opacity = '1';
+            };
+            const hideTip = () => {
+                dot.setAttribute('r', v > 0 ? '4' : '3');
+                tooltip.style.opacity = '0';
+            };
+
+            hitArea.addEventListener('mouseenter', showTip);
+            hitArea.addEventListener('mouseleave', hideTip);
+
             svg.appendChild(dot);
+            svg.appendChild(hitArea);
         });
     }
 
