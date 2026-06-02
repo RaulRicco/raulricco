@@ -73,10 +73,8 @@
         .section { display: none; }
         .section.active { display: block; }
         .goal-card { background: var(--secondary); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
-        .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
-        .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .bar { background: var(--accent); border-radius: 3px 3px 0 0; width: 100%; min-height: 2px; transition: height 0.5s; }
-        .bar-label { font-size: 0.65rem; color: var(--text-muted); }
+        .bar-chart { width: 100%; }
+        .bar-group:hover { opacity: 0.85; cursor: default; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .task-complete-anim { animation: pulse 0.4s; }
         @media (max-width: 768px) {
@@ -460,11 +458,12 @@
     }
 
     // Daily goal
-    const savedDailyGoal = localStorage.getItem('flow_daily_goal_' + new Date().toISOString().slice(0,10));
+    function localDateStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+    const savedDailyGoal = localStorage.getItem('flow_daily_goal_' + localDateStr());
     if (savedDailyGoal) document.getElementById('daily-goal-input').value = savedDailyGoal;
     document.getElementById('save-daily-goal').addEventListener('click', () => {
         const val = document.getElementById('daily-goal-input').value.trim();
-        if (val) localStorage.setItem('flow_daily_goal_' + new Date().toISOString().slice(0,10), val);
+        if (val) localStorage.setItem('flow_daily_goal_' + localDateStr(), val);
     });
 
     // Quote carousel
@@ -487,7 +486,7 @@
         // Busca tarefas de ontem (e dias anteriores) não concluídas
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().slice(0, 10);
+        const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
         try {
             const res = await apiRequest(`${API}/tasks?date=${yesterdayStr}`);
             if (res && res.ok) {
@@ -505,10 +504,10 @@
     }
 
     async function executeNewDay() {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = localDateStr();
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().slice(0, 10);
+        const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
 
         confirmNewDay.disabled = true;
         confirmNewDay.textContent = 'Aguarde...';
