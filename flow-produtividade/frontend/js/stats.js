@@ -17,9 +17,10 @@ function localDateStr(offsetDays = 0) {
 }
 
 const METRICS = [
-    { key: 'hours',    label: 'Horas',   color: '#63b3ed' },
-    { key: 'sessions', label: 'Sessões', color: '#68d391' },
-    { key: 'tasks',    label: 'Tarefas', color: '#f6ad55' },
+    { key: 'hours',      label: 'Horas',      color: '#63b3ed' },
+    { key: 'sessions',   label: 'Sessões',    color: '#68d391' },
+    { key: 'tasks',      label: 'Tarefas',    color: '#f6ad55' },
+    { key: 'completion', label: 'Conclusão %', color: '#b794f4' },
 ];
 
 let _chartData = null;
@@ -50,14 +51,23 @@ function renderStats(sessions, tasks, days) {
         sessionsByDate[s.date] = (sessionsByDate[s.date] || 0) + (s.count || 0);
     });
     const tasksByDate = {};
-    tasks.forEach(t => { tasksByDate[t.date] = (tasksByDate[t.date] || 0) + (t.done || 0); });
+    const tasksTotalByDate = {};
+    tasks.forEach(t => {
+        tasksByDate[t.date] = (tasksByDate[t.date] || 0) + (t.done || 0);
+        tasksTotalByDate[t.date] = (tasksTotalByDate[t.date] || 0) + (t.total || 0);
+    });
 
     // Série de valores por métrica
     _chartData = {
         dates,
-        hours:    dates.map(d => parseFloat(((minutesByDate[d] || 0) / 60).toFixed(2))),
-        sessions: dates.map(d => sessionsByDate[d] || 0),
-        tasks:    dates.map(d => tasksByDate[d] || 0),
+        hours:      dates.map(d => parseFloat(((minutesByDate[d] || 0) / 60).toFixed(2))),
+        sessions:   dates.map(d => sessionsByDate[d] || 0),
+        tasks:      dates.map(d => tasksByDate[d] || 0),
+        completion: dates.map(d => {
+            const total = tasksTotalByDate[d] || 0;
+            const done  = tasksByDate[d] || 0;
+            return total > 0 ? Math.round((done / total) * 100) : 0;
+        }),
     };
 
     buildChartUI();
@@ -118,7 +128,7 @@ function drawLine(metricKey) {
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
 
-    const maxVal = Math.max(...values, metricKey === 'hours' ? 0.5 : 1);
+    const maxVal = metricKey === 'completion' ? 100 : Math.max(...values, metricKey === 'hours' ? 0.5 : 1);
     const n = dates.length;
 
     const xOf = i => padL + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
@@ -137,6 +147,8 @@ function drawLine(metricKey) {
         const val = maxVal * (1 - i / 4);
         const label = metricKey === 'hours'
             ? (val >= 1 ? `${val.toFixed(1)}h` : `${Math.round(val * 60)}m`)
+            : metricKey === 'completion'
+            ? `${Math.round(val)}%`
             : Math.round(val);
 
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -201,6 +213,8 @@ function drawLine(metricKey) {
             const [, mm, dd] = dates[i].split('-');
             const valLabel = metricKey === 'hours'
                 ? (v >= 1 ? `${Math.floor(v)}h${Math.round((v % 1) * 60) > 0 ? ` ${Math.round((v % 1) * 60)}m` : ''}` : `${Math.round(v * 60)}m`)
+                : metricKey === 'completion'
+                ? `${v}%`
                 : v;
             const tip = document.createElementNS('http://www.w3.org/2000/svg', 'title');
             tip.textContent = `${dd}/${mm}: ${valLabel}`;
