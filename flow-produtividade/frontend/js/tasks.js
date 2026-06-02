@@ -10,8 +10,33 @@ function initTasks(API, token) {
     let dragSrcId = null;
     const today = brDate();
 
+    let migrated = false;
+
+    async function migratePending() {
+        if (migrated) return;
+        migrated = true;
+        // Verifica os últimos 7 dias e migra tarefas pendentes para hoje
+        for (let i = 1; i <= 7; i++) {
+            const date = brDate(i);
+            try {
+                const res = await apiRequest(`${API}/tasks?date=${date}`);
+                if (!res || !res.ok) continue;
+                const old = await res.json();
+                const pending = old.filter(t => !t.completed);
+                for (const task of pending) {
+                    await apiRequest(`${API}/tasks`, {
+                        method: 'POST',
+                        body: JSON.stringify({ text: task.text, priority: task.priority, date: today })
+                    });
+                    await apiRequest(`${API}/tasks/${task.id}`, { method: 'DELETE' });
+                }
+            } catch (e) {}
+        }
+    }
+
     async function loadTasks() {
         try {
+            await migratePending();
             const res = await apiRequest(`${API}/tasks?date=${today}`);
             if (!res || !res.ok) return;
             tasks = await res.json();
