@@ -1,5 +1,6 @@
 import { json } from '../../../_lib/response.js';
 import { sendMetaEvent, logCapiEvent } from '../../../_lib/meta-capi.js';
+import { sendGoogleAdsConversion } from '../../../_lib/google-ads-capi.js';
 
 const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
 
@@ -35,11 +36,11 @@ export async function onRequestPatch({ request, env, params, waitUntil }) {
   if (body.status === 'fechado') {
     const lead = await env.DB.prepare(`SELECT * FROM leads WHERE id = ?`).bind(params.id).first();
     if (lead) {
-      const eventId = crypto.randomUUID();
-      const capiTask = sendMetaEvent({
+      const metaEventId = crypto.randomUUID();
+      const metaTask = sendMetaEvent({
         env,
         eventName: 'Purchase',
-        eventId,
+        eventId: metaEventId,
         nome: lead.nome,
         email: lead.email,
         telefone: lead.telefone,
@@ -47,10 +48,28 @@ export async function onRequestPatch({ request, env, params, waitUntil }) {
         userAgent: lead.user_agent,
         value: valorFechado,
         currency: 'BRL',
-      }).then((res) => logCapiEvent(env, { leadId: params.id, eventName: 'Purchase', eventId, result: res }));
+      }).then((res) =>
+        logCapiEvent(env, { leadId: params.id, eventName: 'Purchase', eventId: metaEventId, result: res })
+      );
 
-      if (waitUntil) waitUntil(capiTask);
-      else await capiTask;
+      const googleEventId = crypto.randomUUID();
+      const googleTask = sendGoogleAdsConversion({
+        env,
+        gclid: lead.gclid,
+        value: valorFechado,
+        currency: 'BRL',
+      }).then((res) =>
+        logCapiEvent(env, {
+          leadId: params.id,
+          eventName: 'GoogleAdsConversion',
+          eventId: googleEventId,
+          result: res,
+        })
+      );
+
+      const combined = Promise.all([metaTask, googleTask]);
+      if (waitUntil) waitUntil(combined);
+      else await combined;
     }
   }
 
