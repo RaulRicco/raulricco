@@ -1,4 +1,4 @@
-import { json } from '../../_lib/response.js';
+import { json } from '../../../_lib/response.js';
 
 const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
 
