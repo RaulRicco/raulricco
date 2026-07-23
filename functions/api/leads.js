@@ -1,4 +1,5 @@
 import { json } from '../_lib/response.js';
+import { sendMetaEvent, logCapiEvent } from '../_lib/meta-capi.js';
 
 const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -7,7 +8,7 @@ function digitsOnly(str) {
   return (str || '').replace(/\D/g, '');
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, waitUntil }) {
   const body = await request.json().catch(() => null);
   if (!body) return json({ error: 'JSON inválido' }, 400);
 
@@ -59,6 +60,24 @@ export async function onRequestPost({ request, env }) {
       ip
     )
     .run();
+
+  const eventId = body.event_id || crypto.randomUUID();
+  const capiTask = sendMetaEvent({
+    env,
+    eventName: 'Lead',
+    eventId,
+    eventSourceUrl: body.event_source_url,
+    nome,
+    email,
+    telefone,
+    clientIp: ip,
+    userAgent,
+    fbp: body.fbp,
+    fbc: body.fbc,
+  }).then((result) => logCapiEvent(env, { leadId: id, eventName: 'Lead', eventId, result }));
+
+  if (waitUntil) waitUntil(capiTask);
+  else await capiTask;
 
   return json({ ok: true, id }, 201);
 }

@@ -43,6 +43,18 @@ document.addEventListener('DOMContentLoaded', function () {
     fbclid: params.get('fbclid'),
   };
 
+  // ━━━━━━━━━━━━━━ COOKIES DO META PIXEL (fbp/fbc) ━━━━━━━━━━━━━━
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]+)`));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  const fbp = getCookie('_fbp');
+  let fbc = getCookie('_fbc');
+  if (!fbc && utms.fbclid) {
+    fbc = `fb.1.${Date.now()}.${utms.fbclid}`;
+  }
+
   // ━━━━━━━━━━━━━━ QUIZ STATE ━━━━━━━━━━━━━━
   const overlay = document.getElementById('quizOverlay');
   const form = document.getElementById('quizForm');
@@ -174,11 +186,20 @@ document.addEventListener('DOMContentLoaded', function () {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Enviando...';
 
+    const eventId = crypto.randomUUID();
+
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...quizState.answers, ...utms }),
+        body: JSON.stringify({
+          ...quizState.answers,
+          ...utms,
+          event_id: eventId,
+          event_source_url: window.location.href,
+          fbp,
+          fbc,
+        }),
       });
       const data = await response.json().catch(() => null);
 
@@ -203,7 +224,8 @@ document.addEventListener('DOMContentLoaded', function () {
         gtag('event', 'generate_lead', { event_category: 'Quiz', event_label: 'Diagnóstico Gratuito' });
       }
       if (typeof fbq !== 'undefined') {
-        fbq('track', 'Lead');
+        // mesmo event_id enviado ao servidor (CAPI) para o Meta deduplicar
+        fbq('track', 'Lead', {}, { eventID: eventId });
       }
 
       const waMessage = encodeURIComponent('quero meu diagnostico gratuito');
