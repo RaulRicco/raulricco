@@ -349,74 +349,6 @@ h1, h2, h3, h4 {
   margin-top: 2px;
 }
 
-/* ── Prova social ── */
-.social-proof-quote {
-  max-width: 720px;
-  margin: 0 auto 56px;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: clamp(20px, 2.6vw, 28px);
-  line-height: 1.4;
-}
-
-.social-proof-quote cite {
-  display: block;
-  margin-top: 20px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-style: normal;
-  color: var(--text-muted);
-}
-
-.testimonials-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.testimonial-card {
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 28px;
-  background: transparent;
-}
-
-.testimonial-stars {
-  color: var(--accent);
-  font-size: 14px;
-  margin-bottom: 12px;
-  letter-spacing: 2px;
-}
-
-.testimonial-card p {
-  font-size: 14px;
-  color: var(--text-muted);
-  margin-bottom: 20px;
-  font-style: italic;
-}
-
-.testimonial-author {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.testimonial-business {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.testimonial-placeholder-tag {
-  display: inline-block;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 3px 10px;
-  margin-bottom: 12px;
-}
-
 /* ── Oferta ── */
 .offer-card {
   display: grid;
@@ -713,7 +645,6 @@ h1, h2, h3, h4 {
   .problem-grid { grid-template-columns: repeat(2, 1fr); }
   .solution { grid-template-columns: 1fr; gap: 40px; }
   .solution-photo { max-width: 360px; margin: 0 auto; }
-  .testimonials-grid { grid-template-columns: 1fr; }
   .offer-card { grid-template-columns: 1fr; }
   .offer-side { border-left: none; border-top: 1px solid var(--border); }
 }
