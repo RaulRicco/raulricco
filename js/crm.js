@@ -13,13 +13,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const leadModalOverlay = document.getElementById('leadModalOverlay');
   const leadModalClose = document.getElementById('leadModalClose');
-  const leadModalNotas = document.getElementById('leadModalNotas');
+  const leadModalNotesList = document.getElementById('leadModalNotesList');
   const leadModalSaveStatus = document.getElementById('leadModalSaveStatus');
+  const noteForm = document.getElementById('noteForm');
+  const noteText = document.getElementById('noteText');
 
   const STATUSES = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
   let leadsById = {};
   let openLeadId = null;
-  let notesSaveTimer = null;
 
   function detectSource(lead) {
     if (lead.gclid || lead.utm_source === 'google') return { label: 'Google Ads', className: 'source-google' };
@@ -79,9 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
               ? `<div class="kanban-card-value">${formatCurrency(lead.valor_fechado)}</div>`
               : '';
           const source = detectSource(lead);
-          const notesLine = lead.notas
-            ? '<div class="kanban-card-notes-indicator">📝 Tem anotações</div>'
-            : '';
 
           return `
             <div class="kanban-card" draggable="true" data-id="${lead.id}">
@@ -91,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function () {
               <div class="kanban-card-meta">${escapeHtml(lead.quanto_disposto_investir || '—')}</div>
               <div class="kanban-card-meta">${formatDate(lead.created_at)}</div>
               ${valueLine}
-              ${notesLine}
               <div class="kanban-card-links">
                 <a href="${waLink}" target="_blank" rel="noopener noreferrer" data-stop-propagation>WhatsApp</a>
                 <a href="mailto:${escapeHtml(lead.email)}" data-stop-propagation>Email</a>
@@ -218,7 +215,35 @@ document.addEventListener('DOMContentLoaded', function () {
     ['fbclid', 'Facebook Click ID'],
   ];
 
-  function openLeadModal(leadId) {
+  function renderNotes(notes) {
+    if (!notes.length) {
+      leadModalNotesList.innerHTML = '<div class="notes-empty">Nenhuma anotação ainda.</div>';
+      return;
+    }
+    leadModalNotesList.innerHTML = notes
+      .map(
+        (note) => `
+          <div class="note-item">
+            <div class="note-date">${formatDate(note.created_at)}</div>
+            <div class="note-text">${escapeHtml(note.texto)}</div>
+          </div>
+        `
+      )
+      .join('');
+    leadModalNotesList.scrollTop = leadModalNotesList.scrollHeight;
+  }
+
+  async function loadNotes(leadId) {
+    const response = await fetch(`/api/leads/${leadId}/notes`);
+    if (!response.ok) {
+      leadModalNotesList.innerHTML = '<div class="notes-empty">Erro ao carregar anotações.</div>';
+      return;
+    }
+    const data = await response.json();
+    renderNotes(data.notes || []);
+  }
+
+  async function openLeadModal(leadId) {
     const lead = leadsById[leadId];
     if (!lead) return;
     openLeadId = leadId;
@@ -242,11 +267,14 @@ document.addEventListener('DOMContentLoaded', function () {
       ? rows.join('')
       : '<div class="row"><span>Origem</span><span>Direto (sem UTM/click ID)</span></div>';
 
-    leadModalNotas.value = lead.notas || '';
+    noteText.value = '';
     leadModalSaveStatus.textContent = '';
+    leadModalNotesList.innerHTML = '<div class="notes-empty">Carregando...</div>';
 
     leadModalOverlay.hidden = false;
     document.body.style.overflow = 'hidden';
+
+    loadNotes(leadId);
   }
 
   function closeLeadModal() {
@@ -260,26 +288,36 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.target === leadModalOverlay) closeLeadModal();
   });
 
-  leadModalNotas.addEventListener('input', function () {
+  noteForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
     if (!openLeadId) return;
-    leadModalSaveStatus.textContent = 'Salvando...';
-    clearTimeout(notesSaveTimer);
-    const leadId = openLeadId;
-    const notas = leadModalNotas.value;
 
-    notesSaveTimer = setTimeout(async () => {
-      const response = await fetch(`/api/leads/${leadId}`, {
-        method: 'PATCH',
+    const texto = noteText.value.trim();
+    if (!texto) return;
+
+    const submitBtn = noteForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    leadModalSaveStatus.textContent = 'Salvando...';
+
+    try {
+      const response = await fetch(`/api/leads/${openLeadId}/notes`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notas }),
+        body: JSON.stringify({ texto }),
       });
-      if (response.ok && leadsById[leadId]) {
-        leadsById[leadId].notas = notas;
-        leadModalSaveStatus.textContent = 'Anotações salvas.';
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data || !data.ok) {
+        leadModalSaveStatus.textContent = (data && data.error) || 'Erro ao salvar anotação.';
       } else {
-        leadModalSaveStatus.textContent = 'Erro ao salvar. Tente novamente.';
+        noteText.value = '';
+        leadModalSaveStatus.textContent = '';
+        await loadNotes(openLeadId);
       }
-    }, 600);
+    } catch (err) {
+      leadModalSaveStatus.textContent = 'Erro de conexão. Tente novamente.';
+    }
+    submitBtn.disabled = false;
   });
 
   async function loadLeads() {
