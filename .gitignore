@@ -3,3 +3,5 @@
 .agents/
 flow-produtividade/worker/node_modules/
 flow-produtividade/worker/.wrangler/
+.dev.vars
+.wrangler/

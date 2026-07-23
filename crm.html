@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM de Leads | Raul Ricco</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/diagnostico.css">
+  <style>
+    body { padding: 0; }
+    .crm-shell { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
+    .crm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .crm-header h1 { font-size: 24px; }
+    .login-box { max-width: 380px; margin: 96px auto; }
+    .login-box h1 { font-size: 22px; margin-bottom: 24px; text-align: center; }
+    .login-box .quiz-field { margin-bottom: 16px; }
+    .login-error { color: var(--accent); font-size: 13px; margin-bottom: 16px; display: none; }
+    .login-error.visible { display: block; }
+
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted); font-size: 13px;
+    }
+    .filter-btn.active { border-color: var(--accent); color: var(--accent); }
+
+    .leads-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 900px; }
+    th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--text-muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+    tr:last-child td { border-bottom: none; }
+    .status-select {
+      background: var(--bg); color: var(--text); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 10px; font-size: 13px; font-family: inherit;
+    }
+    .quick-links { display: flex; gap: 10px; }
+    .quick-links a { color: var(--accent); font-size: 13px; }
+    .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
+    .btn-sm { padding: 8px 16px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="crm-shell">
+    <div id="loginView" class="login-box" hidden>
+      <h1>Acesso ao CRM</h1>
+      <form id="loginForm">
+        <div class="quiz-field">
+          <label for="password">Senha</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <p class="login-error" id="loginError"></p>
+        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+      </form>
+    </div>
+
+    <div id="crmView" hidden>
+      <div class="crm-header">
+        <h1>Leads — Diagnóstico Gratuito</h1>
+        <button class="btn btn-outline btn-sm" id="logoutBtn">Sair</button>
+      </div>
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-status="">Todos</button>
+        <button class="filter-btn" data-status="novo">Novo</button>
+        <button class="filter-btn" data-status="em_contato">Em contato</button>
+        <button class="filter-btn" data-status="qualificado">Qualificado</button>
+        <button class="filter-btn" data-status="descartado">Descartado</button>
+      </div>
+      <div class="leads-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Contato</th>
+              <th>Segmento</th>
+              <th>Investe hoje</th>
+              <th>Investimento</th>
+              <th>Status</th>
+              <th>Recebido em</th>
+            </tr>
+          </thead>
+          <tbody id="leadsBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState" hidden>Nenhum lead encontrado.</div>
+    </div>
+  </div>
+
+  <script src="js/crm.js"></script>
+</body>
+</html>
