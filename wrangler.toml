@@ -5,4 +5,4 @@ compatibility_date = "2024-11-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "raulricco-leads"
-database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+database_id = "c8dce7a2-d2b2-4eb5-9ba5-e9c2d4983217"
