@@ -90,6 +90,8 @@ document.addEventListener('DOMContentLoaded', function () {
       showLogin();
       return;
     }
+    loginView.hidden = true;
+    crmView.hidden = false;
     const data = await response.json();
     renderLeads(data.leads || []);
   }
@@ -100,8 +102,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function showCrm() {
-    loginView.hidden = true;
-    crmView.hidden = false;
     loadLeads();
   }
 
