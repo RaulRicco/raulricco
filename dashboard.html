@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Trackeamento | Raul Ricco</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/diagnostico.css">
+  <style>
+    body { padding: 0; }
+    .dash-shell { max-width: 1300px; margin: 0 auto; padding: 32px 24px; }
+    .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .dash-header h1 { font-size: 22px; }
+    .dash-header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .btn-sm { padding: 8px 16px; font-size: 13px; }
+
+    .login-box { max-width: 380px; margin: 96px auto; }
+    .login-box h1 { font-size: 22px; margin-bottom: 24px; text-align: center; }
+    .login-box .quiz-field { margin-bottom: 16px; }
+    .login-error { color: var(--accent); font-size: 13px; margin-bottom: 16px; display: none; }
+    .login-error.visible { display: block; }
+
+    /* ── Filtro de período ── */
+    .period-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    .period-btn {
+      padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted); font-size: 13px;
+    }
+    .period-btn.active { border-color: var(--accent); color: var(--accent); }
+    .custom-range { display: none; align-items: center; gap: 8px; }
+    .custom-range.visible { display: flex; }
+    .custom-range input {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); padding: 7px 10px; font-size: 13px; font-family: inherit;
+    }
+    .custom-range button { padding: 7px 14px; font-size: 13px; }
+
+    /* ── Cards de resumo ── */
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .summary-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px;
+    }
+    .summary-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px; }
+    .summary-card .value { font-family: var(--font-display); font-size: 28px; }
+    .summary-card .value.accent { color: var(--accent); }
+    .summary-card .value.success { color: var(--success); }
+
+    /* ── Grid principal ── */
+    .dash-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .panel {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px;
+    }
+    .panel h2 { font-size: 16px; margin-bottom: 20px; }
+
+    /* ── Gráfico de barras ── */
+    .chart-bars { display: flex; align-items: flex-end; gap: 8px; height: 200px; }
+    .chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 2px; }
+    .chart-bar-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+    .chart-empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 60px 0; }
+
+    /* ── Distribuição por origem ── */
+    .source-list { display: flex; flex-direction: column; gap: 14px; }
+    .source-row .source-row-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+    .source-row .source-row-head .name { font-weight: 600; }
+    .source-row .source-row-head .count { color: var(--text-muted); }
+    .source-bar-bg { height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; }
+    .source-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+    .source-bar-fill.google { background: #4285f4; }
+    .source-bar-fill.meta { background: #0866ff; }
+
+    /* ── Lista de leads recentes ── */
+    .leads-table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--text-muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+    tr:last-child td { border-bottom: none; }
+    .status-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px;
+      border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .status-badge.fechado { color: var(--success); border-color: var(--success); }
+    .status-badge.descartado { color: var(--text-muted); }
+    .status-badge.qualificado { color: var(--accent); border-color: var(--accent); }
+    .empty-state { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 13px; }
+
+    .dash-footer { text-align: center; padding: 32px 0 8px; color: var(--text-muted); font-size: 13px; }
+
+    @media (max-width: 1000px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .dash-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dash-shell">
+    <div id="loginView" class="login-box" hidden>
+      <h1>Acesso ao Dashboard</h1>
+      <form id="loginForm">
+        <div class="quiz-field">
+          <label for="password">Senha</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <p class="login-error" id="loginError"></p>
+        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+      </form>
+    </div>
+
+    <div id="dashView" hidden>
+      <div class="dash-header">
+        <h1>Dashboard de Trackeamento</h1>
+        <div class="dash-header-actions">
+          <a href="crm.html" class="btn btn-outline btn-sm">Ver CRM</a>
+          <button class="btn btn-outline btn-sm" id="logoutBtn">Sair</button>
+        </div>
+      </div>
+
+      <div class="period-filter" id="periodFilter">
+        <button class="period-btn" data-period="today">Hoje</button>
+        <button class="period-btn active" data-period="7d">Últimos 7 dias</button>
+        <button class="period-btn" data-period="month">Este mês</button>
+        <button class="period-btn" data-period="all">Tudo</button>
+        <button class="period-btn" data-period="custom">Personalizado</button>
+        <div class="custom-range" id="customRange">
+          <input type="date" id="dateFrom">
+          <span style="color: var(--text-muted); font-size: 13px;">até</span>
+          <input type="date" id="dateTo">
+          <button class="btn btn-primary" id="applyCustomRange">Aplicar</button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="label">Total de leads</div>
+          <div class="value" id="totalLeads">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Leads fechados</div>
+          <div class="value success" id="totalFechados">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Valor fechado</div>
+          <div class="value success" id="totalFechado">R$ 0</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Taxa de conversão</div>
+          <div class="value accent" id="taxaConversao">0%</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="panel">
+          <h2>Leads ao longo do tempo</h2>
+          <div class="chart-bars" id="chartBars"></div>
+        </div>
+        <div class="panel">
+          <h2>Origem dos leads</h2>
+          <div class="source-list" id="sourceList"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Leads recentes</h2>
+        <div class="leads-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Segmento</th>
+                <th>Origem</th>
+                <th>Status</th>
+                <th>Valor fechado</th>
+                <th>Recebido em</th>
+              </tr>
+            </thead>
+            <tbody id="recentLeadsBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="emptyState" hidden>Nenhum lead no período selecionado.</div>
+      </div>
+
+      <div class="dash-footer">Tracking stack — Ricco Negócio Digitais</div>
+    </div>
+  </div>
+
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
