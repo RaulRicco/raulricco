@@ -11,8 +11,24 @@ document.addEventListener('DOMContentLoaded', function () {
   const kanbanBoard = document.getElementById('kanbanBoard');
   const totalFechadoEl = document.getElementById('totalFechado');
 
+  const leadModalOverlay = document.getElementById('leadModalOverlay');
+  const leadModalClose = document.getElementById('leadModalClose');
+  const leadModalNotas = document.getElementById('leadModalNotas');
+  const leadModalSaveStatus = document.getElementById('leadModalSaveStatus');
+
   const STATUSES = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
   let leadsById = {};
+  let openLeadId = null;
+  let notesSaveTimer = null;
+
+  function detectSource(lead) {
+    if (lead.gclid || lead.utm_source === 'google') return { label: 'Google Ads', className: 'source-google' };
+    if (lead.fbclid || lead.utm_source === 'facebook' || lead.utm_source === 'instagram' || lead.utm_source === 'meta') {
+      return { label: 'Meta Ads', className: 'source-meta' };
+    }
+    if (lead.utm_source) return { label: lead.utm_source, className: '' };
+    return { label: 'Direto', className: 'source-direto' };
+  }
 
   function formatDate(isoLike) {
     if (!isoLike) return '—';
@@ -62,17 +78,23 @@ document.addEventListener('DOMContentLoaded', function () {
             lead.status === 'fechado' && lead.valor_fechado
               ? `<div class="kanban-card-value">${formatCurrency(lead.valor_fechado)}</div>`
               : '';
+          const source = detectSource(lead);
+          const notesLine = lead.notas
+            ? '<div class="kanban-card-notes-indicator">📝 Tem anotações</div>'
+            : '';
 
           return `
             <div class="kanban-card" draggable="true" data-id="${lead.id}">
+              <span class="source-tag ${source.className}">${escapeHtml(source.label)}</span>
               <div class="kanban-card-name">${escapeHtml(lead.nome)}</div>
               <div class="kanban-card-meta">${escapeHtml(lead.segmento || '—')}</div>
               <div class="kanban-card-meta">${escapeHtml(lead.quanto_disposto_investir || '—')}</div>
               <div class="kanban-card-meta">${formatDate(lead.created_at)}</div>
               ${valueLine}
+              ${notesLine}
               <div class="kanban-card-links">
-                <a href="${waLink}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
-                <a href="mailto:${escapeHtml(lead.email)}">Email</a>
+                <a href="${waLink}" target="_blank" rel="noopener noreferrer" data-stop-propagation>WhatsApp</a>
+                <a href="mailto:${escapeHtml(lead.email)}" data-stop-propagation>Email</a>
               </div>
             </div>
           `;
@@ -86,12 +108,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function attachDragEvents() {
     kanbanBoard.querySelectorAll('.kanban-card').forEach((card) => {
+      let dragMoved = false;
+
       card.addEventListener('dragstart', function () {
+        dragMoved = true;
         this.classList.add('dragging');
         this.dataset.fromStatus = this.closest('.kanban-column').dataset.status;
       });
       card.addEventListener('dragend', function () {
         this.classList.remove('dragging');
+      });
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('[data-stop-propagation]')) return;
+        if (dragMoved) {
+          dragMoved = false;
+          return;
+        }
+        openLeadModal(this.dataset.id);
       });
     });
 
@@ -174,6 +207,80 @@ document.addEventListener('DOMContentLoaded', function () {
 
     loadLeads();
   }
+
+  const SOURCE_FIELDS = [
+    ['utm_source', 'UTM Source'],
+    ['utm_medium', 'UTM Medium'],
+    ['utm_campaign', 'UTM Campaign'],
+    ['utm_term', 'UTM Term'],
+    ['utm_content', 'UTM Content'],
+    ['gclid', 'Google Click ID'],
+    ['fbclid', 'Facebook Click ID'],
+  ];
+
+  function openLeadModal(leadId) {
+    const lead = leadsById[leadId];
+    if (!lead) return;
+    openLeadId = leadId;
+
+    document.getElementById('leadModalName').textContent = lead.nome;
+    document.getElementById('leadModalSegmento').textContent = lead.segmento || 'Segmento não informado';
+    document.getElementById('leadModalTelefone').textContent = lead.telefone || '—';
+    document.getElementById('leadModalEmail').textContent = lead.email || '—';
+    document.getElementById('leadModalTempoNegocio').textContent = lead.tempo_negocio || '—';
+    document.getElementById('leadModalJaInveste').textContent =
+      lead.ja_investe_trafego === 'sim' ? 'Sim' : lead.ja_investe_trafego === 'nao' ? 'Não' : '—';
+    document.getElementById('leadModalQuandoInvestiu').textContent = lead.quando_investiu || '—';
+    document.getElementById('leadModalQuantoInvestir').textContent = lead.quanto_disposto_investir || '—';
+    document.getElementById('leadModalCreatedAt').textContent = formatDate(lead.created_at);
+
+    const sourceContainer = document.getElementById('leadModalSource');
+    const rows = SOURCE_FIELDS.filter(([field]) => lead[field]).map(
+      ([field, label]) => `<div class="row"><span>${label}</span><span>${escapeHtml(lead[field])}</span></div>`
+    );
+    sourceContainer.innerHTML = rows.length
+      ? rows.join('')
+      : '<div class="row"><span>Origem</span><span>Direto (sem UTM/click ID)</span></div>';
+
+    leadModalNotas.value = lead.notas || '';
+    leadModalSaveStatus.textContent = '';
+
+    leadModalOverlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLeadModal() {
+    leadModalOverlay.hidden = true;
+    document.body.style.overflow = '';
+    openLeadId = null;
+  }
+
+  leadModalClose.addEventListener('click', closeLeadModal);
+  leadModalOverlay.addEventListener('click', function (e) {
+    if (e.target === leadModalOverlay) closeLeadModal();
+  });
+
+  leadModalNotas.addEventListener('input', function () {
+    if (!openLeadId) return;
+    leadModalSaveStatus.textContent = 'Salvando...';
+    clearTimeout(notesSaveTimer);
+    const leadId = openLeadId;
+    const notas = leadModalNotas.value;
+
+    notesSaveTimer = setTimeout(async () => {
+      const response = await fetch(`/api/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notas }),
+      });
+      if (response.ok && leadsById[leadId]) {
+        leadsById[leadId].notas = notas;
+        leadModalSaveStatus.textContent = 'Anotações salvas.';
+      } else {
+        leadModalSaveStatus.textContent = 'Erro ao salvar. Tente novamente.';
+      }
+    }, 600);
+  });
 
   async function loadLeads() {
     const response = await fetch('/api/leads');
