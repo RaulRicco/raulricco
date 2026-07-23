@@ -9,38 +9,113 @@
   <link rel="stylesheet" href="css/diagnostico.css">
   <style>
     body { padding: 0; }
-    .crm-shell { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
-    .crm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
-    .crm-header h1 { font-size: 24px; }
+    .crm-shell { max-width: 1500px; margin: 0 auto; padding: 32px 24px; }
+    .crm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .crm-header h1 { font-size: 22px; }
+    .crm-header-actions { display: flex; align-items: center; gap: 16px; }
+    .crm-total-fechado { font-size: 14px; color: var(--text-muted); }
+    .crm-total-fechado strong { color: var(--success); font-family: var(--font-display); }
+
     .login-box { max-width: 380px; margin: 96px auto; }
     .login-box h1 { font-size: 22px; margin-bottom: 24px; text-align: center; }
     .login-box .quiz-field { margin-bottom: 16px; }
     .login-error { color: var(--accent); font-size: 13px; margin-bottom: 16px; display: none; }
     .login-error.visible { display: block; }
 
-    .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-    .filter-btn {
-      padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border);
-      background: transparent; color: var(--text-muted); font-size: 13px;
+    /* ── Kanban ── */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(240px, 1fr));
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      align-items: start;
     }
-    .filter-btn.active { border-color: var(--accent); color: var(--accent); }
 
-    .leads-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 900px; }
-    th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th { color: var(--text-muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
-    tr:last-child td { border-bottom: none; }
-    .status-select {
-      background: var(--bg); color: var(--text); border: 1px solid var(--border);
-      border-radius: 6px; padding: 6px 10px; font-size: 13px; font-family: inherit;
+    .kanban-column {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      min-height: 200px;
     }
-    .quick-links { display: flex; gap: 10px; }
-    .quick-links a { color: var(--accent); font-size: 13px; }
-    .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
+
+    .kanban-column.drag-over { border-color: var(--accent); background: rgba(255, 71, 87, 0.06); }
+
+    .kanban-column-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-muted);
+    }
+
+    .kanban-column-head .count {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 9px;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .kanban-column[data-status="fechado"] .kanban-column-head { color: var(--success); }
+    .kanban-column[data-status="descartado"] .kanban-column-head { color: var(--text-muted); }
+
+    .kanban-cards {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      min-height: 80px;
+    }
+
+    .kanban-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      cursor: grab;
+      font-size: 13px;
+    }
+
+    .kanban-card:active { cursor: grabbing; }
+    .kanban-card.dragging { opacity: 0.4; }
+
+    .kanban-card-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .kanban-card-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 2px; }
+    .kanban-card-value { color: var(--success); font-weight: 600; font-size: 13px; margin-top: 6px; }
+
+    .kanban-card-links { display: flex; gap: 10px; margin-top: 10px; }
+    .kanban-card-links a { color: var(--accent); font-size: 12px; }
+
+    .empty-column { text-align: center; padding: 24px 8px; color: var(--text-muted); font-size: 12px; }
     .btn-sm { padding: 8px 16px; font-size: 13px; }
+
+    @media (max-width: 1100px) {
+      .kanban-board { grid-template-columns: repeat(5, 260px); }
+    }
   </style>
 </head>
 <body>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-WDPHBD9Z');</script>
+  <!-- End Google Tag Manager -->
+
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WDPHBD9Z"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
   <div class="crm-shell">
     <div id="loginView" class="login-box" hidden>
       <h1>Acesso ao CRM</h1>
@@ -57,32 +132,34 @@
     <div id="crmView" hidden>
       <div class="crm-header">
         <h1>Leads — Diagnóstico Gratuito</h1>
-        <button class="btn btn-outline btn-sm" id="logoutBtn">Sair</button>
+        <div class="crm-header-actions">
+          <span class="crm-total-fechado">Fechado no mês: <strong id="totalFechado">R$ 0</strong></span>
+          <button class="btn btn-outline btn-sm" id="logoutBtn">Sair</button>
+        </div>
       </div>
-      <div class="filters" id="filters">
-        <button class="filter-btn active" data-status="">Todos</button>
-        <button class="filter-btn" data-status="novo">Novo</button>
-        <button class="filter-btn" data-status="em_contato">Em contato</button>
-        <button class="filter-btn" data-status="qualificado">Qualificado</button>
-        <button class="filter-btn" data-status="descartado">Descartado</button>
+
+      <div class="kanban-board" id="kanbanBoard">
+        <div class="kanban-column" data-status="novo">
+          <div class="kanban-column-head"><span>Novo</span><span class="count" data-count="novo">0</span></div>
+          <div class="kanban-cards" data-cards="novo"></div>
+        </div>
+        <div class="kanban-column" data-status="em_contato">
+          <div class="kanban-column-head"><span>Em contato</span><span class="count" data-count="em_contato">0</span></div>
+          <div class="kanban-cards" data-cards="em_contato"></div>
+        </div>
+        <div class="kanban-column" data-status="qualificado">
+          <div class="kanban-column-head"><span>Qualificado</span><span class="count" data-count="qualificado">0</span></div>
+          <div class="kanban-cards" data-cards="qualificado"></div>
+        </div>
+        <div class="kanban-column" data-status="fechado">
+          <div class="kanban-column-head"><span>Fechado</span><span class="count" data-count="fechado">0</span></div>
+          <div class="kanban-cards" data-cards="fechado"></div>
+        </div>
+        <div class="kanban-column" data-status="descartado">
+          <div class="kanban-column-head"><span>Descartado</span><span class="count" data-count="descartado">0</span></div>
+          <div class="kanban-cards" data-cards="descartado"></div>
+        </div>
       </div>
-      <div class="leads-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Contato</th>
-              <th>Segmento</th>
-              <th>Investe hoje</th>
-              <th>Investimento</th>
-              <th>Status</th>
-              <th>Recebido em</th>
-            </tr>
-          </thead>
-          <tbody id="leadsBody"></tbody>
-        </table>
-      </div>
-      <div class="empty-state" id="emptyState" hidden>Nenhum lead encontrado.</div>
     </div>
   </div>
 

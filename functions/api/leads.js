@@ -1,6 +1,6 @@
 import { json } from '../_lib/response.js';
 
-const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'descartado'];
+const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function digitsOnly(str) {
