@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
               <div class="kanban-card-links">
                 <a href="${waLink}" target="_blank" rel="noopener noreferrer" data-stop-propagation>WhatsApp</a>
                 <a href="mailto:${escapeHtml(lead.email)}" data-stop-propagation>Email</a>
+                <button type="button" class="kanban-card-delete" data-stop-propagation data-delete-id="${lead.id}" aria-label="Excluir lead do CRM">Excluir</button>
               </div>
             </div>
           `;
@@ -122,6 +123,13 @@ document.addEventListener('DOMContentLoaded', function () {
           return;
         }
         openLeadModal(this.dataset.id);
+      });
+    });
+
+    kanbanBoard.querySelectorAll('[data-delete-id]').forEach((btn) => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteLead(this.dataset.deleteId);
       });
     });
 
@@ -200,6 +208,22 @@ document.addEventListener('DOMContentLoaded', function () {
       if (typeof fbq !== 'undefined') {
         fbq('track', 'Purchase', { value: body.valor_fechado, currency: 'BRL' });
       }
+    }
+
+    loadLeads();
+  }
+
+  async function deleteLead(leadId) {
+    const lead = leadsById[leadId];
+    const confirmed = confirm(`Excluir ${lead ? lead.nome : 'este lead'} do CRM? O lead some do board, mas o histórico de tracking é mantido.`);
+    if (!confirmed) return;
+
+    const response = await fetch(`/api/leads/${leadId}`, { method: 'DELETE' });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data || !data.ok) {
+      alert((data && data.error) || 'Não foi possível excluir o lead.');
+      return;
     }
 
     loadLeads();

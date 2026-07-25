@@ -75,3 +75,17 @@ export async function onRequestPatch({ request, env, params, waitUntil }) {
 
   return json({ ok: true });
 }
+
+export async function onRequestDelete({ params, env }) {
+  const result = await env.DB.prepare(
+    `UPDATE leads SET hidden_at = datetime('now'), updated_at = datetime('now') WHERE id = ? AND hidden_at IS NULL`
+  )
+    .bind(params.id)
+    .run();
+
+  if (result.meta.changes === 0) {
+    return json({ error: 'Lead não encontrado' }, 404);
+  }
+
+  return json({ ok: true });
+}

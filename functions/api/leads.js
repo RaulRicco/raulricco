@@ -88,10 +88,10 @@ export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const status = url.searchParams.get('status');
 
-  let query = 'SELECT * FROM leads';
+  let query = 'SELECT * FROM leads WHERE hidden_at IS NULL';
   const bindings = [];
   if (status && VALID_STATUS.includes(status)) {
-    query += ' WHERE status = ?';
+    query += ' AND status = ?';
     bindings.push(status);
   }
   query += ' ORDER BY created_at DESC';

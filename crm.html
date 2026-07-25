@@ -93,8 +93,19 @@
     .kanban-card-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 2px; }
     .kanban-card-value { color: var(--success); font-weight: 600; font-size: 13px; margin-top: 6px; }
 
-    .kanban-card-links { display: flex; gap: 10px; margin-top: 10px; }
+    .kanban-card-links { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
     .kanban-card-links a { color: var(--accent); font-size: 12px; }
+
+    .kanban-card-delete {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .kanban-card-delete:hover { color: var(--accent); }
 
     .empty-column { text-align: center; padding: 24px 8px; color: var(--text-muted); font-size: 12px; }
     .btn-sm { padding: 8px 16px; font-size: 13px; }
