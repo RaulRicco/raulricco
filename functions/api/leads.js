@@ -34,10 +34,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
   await env.DB.prepare(
     `INSERT INTO leads (
       id, segmento, tempo_negocio, ja_investe_trafego, quando_investiu,
-      quanto_disposto_investir, nome, telefone, email, status,
+      quanto_disposto_investir, retencao_atual, origem, nome, telefone, email, status,
       utm_source, utm_medium, utm_campaign, utm_term, utm_content,
       gclid, fbclid, user_agent, ip
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'novo', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'novo', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       id,
@@ -46,6 +46,8 @@ export async function onRequestPost({ request, env, waitUntil }) {
       body.ja_investe_trafego || null,
       body.quando_investiu || null,
       body.quanto_disposto_investir || null,
+      body.retencao_atual || null,
+      body.origem || null,
       nome,
       telefone,
       email,
