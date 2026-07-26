@@ -557,6 +557,16 @@ h1, h2, h3, h4 {
   margin-bottom: 24px;
 }
 
+.quiz-scope-note {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: rgba(255, 71, 87, 0.06);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: -12px 0 24px;
+}
+
 .quiz-options {
   display: flex;
   flex-direction: column;
