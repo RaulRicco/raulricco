@@ -21,9 +21,48 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const STATUSES = ['novo', 'em_contato', 'qualificado', 'reuniao_agendada', 'fechado', 'descartado'];
   const CARDS_PAGE_SIZE = 6;
+  const POLL_INTERVAL_MS = 30000;
+  const BASE_TITLE = document.title;
   let leadsById = {};
   let openLeadId = null;
   const expandedColumns = new Set();
+  const knownLeadIds = new Set();
+  let seenNewLeads = 0;
+  let audioCtx = null;
+
+  function playNewLeadBeep() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      [0, 0.18].forEach((delay, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = i === 0 ? 880 : 1046.5;
+        gain.gain.setValueAtTime(0.0001, now + delay);
+        gain.gain.exponentialRampToValueAtTime(0.25, now + delay + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.16);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.18);
+      });
+    } catch (err) {
+      // Autoplay pode ser bloqueado antes da primeira interação do usuário — ignora silenciosamente
+    }
+  }
+
+  function updateTitleBadge() {
+    document.title = seenNewLeads > 0 ? `(${seenNewLeads}) ${BASE_TITLE}` : BASE_TITLE;
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && seenNewLeads > 0) {
+      seenNewLeads = 0;
+      updateTitleBadge();
+    }
+  });
 
   function detectSource(lead) {
     if (lead.gclid || lead.utm_source === 'google') return { label: 'Google Ads', className: 'source-google' };
@@ -387,7 +426,25 @@ document.addEventListener('DOMContentLoaded', function () {
     loginView.hidden = true;
     crmView.hidden = false;
     const data = await response.json();
-    renderBoard(data.leads || []);
+    const leads = data.leads || [];
+
+    const isFirstLoad = knownLeadIds.size === 0;
+    const newLeads = isFirstLoad ? [] : leads.filter((lead) => !knownLeadIds.has(lead.id));
+    leads.forEach((lead) => knownLeadIds.add(lead.id));
+
+    renderBoard(leads);
+
+    if (newLeads.length > 0) {
+      seenNewLeads += newLeads.length;
+      updateTitleBadge();
+      playNewLeadBeep();
+    }
+  }
+
+  function startPolling() {
+    setInterval(() => {
+      loadLeads().catch(() => {});
+    }, POLL_INTERVAL_MS);
   }
 
   function showLogin() {
@@ -450,8 +507,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   logoutBtn.addEventListener('click', async function () {
     await fetch('/api/auth/logout', { method: 'POST' });
+    knownLeadIds.clear();
+    seenNewLeads = 0;
+    updateTitleBadge();
     showLogin();
   });
 
-  loadLeads().catch(() => showLogin());
+  loadLeads()
+    .then(startPolling)
+    .catch(() => showLogin());
 });
