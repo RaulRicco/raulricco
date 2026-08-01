@@ -25,7 +25,7 @@
     /* ── Kanban ── */
     .kanban-board {
       display: grid;
-      grid-template-columns: repeat(5, minmax(240px, 1fr));
+      grid-template-columns: repeat(6, minmax(240px, 1fr));
       gap: 16px;
       overflow-x: auto;
       padding-bottom: 12px;
@@ -107,6 +107,19 @@
       padding: 0;
     }
     .kanban-card-delete:hover { color: var(--accent); }
+
+    .kanban-toggle {
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .kanban-toggle:hover { color: var(--accent); border-color: var(--accent); }
 
     .empty-column { text-align: center; padding: 24px 8px; color: var(--text-muted); font-size: 12px; }
     .btn-sm { padding: 8px 16px; font-size: 13px; }

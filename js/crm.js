@@ -20,8 +20,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const noteText = document.getElementById('noteText');
 
   const STATUSES = ['novo', 'em_contato', 'qualificado', 'reuniao_agendada', 'fechado', 'descartado'];
+  const CARDS_PAGE_SIZE = 6;
   let leadsById = {};
   let openLeadId = null;
+  const expandedColumns = new Set();
 
   function detectSource(lead) {
     if (lead.gclid || lead.utm_source === 'google') return { label: 'Google Ads', className: 'source-google' };
@@ -59,6 +61,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     let totalFechado = 0;
+    byStatus.fechado.forEach((lead) => {
+      totalFechado += Number(lead.valor_fechado || 0);
+    });
 
     STATUSES.forEach((status) => {
       const container = kanbanBoard.querySelector(`[data-cards="${status}"]`);
@@ -71,9 +76,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      container.innerHTML = items
+      const isExpanded = expandedColumns.has(status);
+      const visibleItems = isExpanded ? items : items.slice(0, CARDS_PAGE_SIZE);
+      const hiddenCount = items.length - visibleItems.length;
+
+      const cardsHtml = visibleItems
         .map((lead) => {
-          if (lead.status === 'fechado') totalFechado += Number(lead.valor_fechado || 0);
           const digits = (lead.telefone || '').replace(/\D/g, '');
           const waLink = digits ? `https://wa.me/55${digits}` : '#';
           const valueLine =
@@ -99,10 +107,35 @@ document.addEventListener('DOMContentLoaded', function () {
           `;
         })
         .join('');
+
+      const toggleHtml = isExpanded
+        ? items.length > CARDS_PAGE_SIZE
+          ? `<button type="button" class="kanban-toggle" data-toggle-status="${status}">Ver menos</button>`
+          : ''
+        : hiddenCount > 0
+          ? `<button type="button" class="kanban-toggle" data-toggle-status="${status}">Ver mais (${hiddenCount})</button>`
+          : '';
+
+      container.innerHTML = cardsHtml + toggleHtml;
     });
 
     totalFechadoEl.textContent = formatCurrency(totalFechado);
     attachDragEvents();
+    attachToggleEvents();
+  }
+
+  function attachToggleEvents() {
+    kanbanBoard.querySelectorAll('[data-toggle-status]').forEach((btn) => {
+      btn.addEventListener('click', function () {
+        const status = this.dataset.toggleStatus;
+        if (expandedColumns.has(status)) {
+          expandedColumns.delete(status);
+        } else {
+          expandedColumns.add(status);
+        }
+        renderBoard(Object.values(leadsById));
+      });
+    });
   }
 
   function attachDragEvents() {
