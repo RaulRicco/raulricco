@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const waMessage = encodeURIComponent('quero meu diagnostico gratuito');
-      document.getElementById('whatsappLink').href = `https://wa.me/5561992082577?text=${waMessage}`;
+      document.getElementById('whatsappLink').href = `https://wa.me/5561991745489?text=${waMessage}`;
 
       showStep('success');
       submitBtn.disabled = false;
