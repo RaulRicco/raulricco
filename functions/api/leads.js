@@ -78,8 +78,18 @@ export async function onRequestPost({ request, env, waitUntil }) {
     fbc: body.fbc,
   }).then((result) => logCapiEvent(env, { leadId: id, eventName: 'Lead', eventId, result }));
 
-  if (waitUntil) waitUntil(capiTask);
-  else await capiTask;
+  const webhookTask = fetch('https://hook.us2.make.com/l1gvabi6oeoh8dghg1awxzqs8ama918a', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, nome, telefone, email, ...body }),
+  }).catch(() => {});
+
+  if (waitUntil) {
+    waitUntil(capiTask);
+    waitUntil(webhookTask);
+  } else {
+    await Promise.all([capiTask, webhookTask]);
+  }
 
   return json({ ok: true, id }, 201);
 }
