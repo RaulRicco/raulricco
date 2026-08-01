@@ -1,7 +1,8 @@
 import { json } from '../_lib/response.js';
 import { sendMetaEvent, logCapiEvent } from '../_lib/meta-capi.js';
+import { sendMakeWebhook } from '../_lib/make-webhook.js';
 
-const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
+const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'reuniao_agendada', 'fechado', 'descartado'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function digitsOnly(str) {
@@ -78,11 +79,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
     fbc: body.fbc,
   }).then((result) => logCapiEvent(env, { leadId: id, eventName: 'Lead', eventId, result }));
 
-  const webhookTask = fetch('https://hook.us2.make.com/l1gvabi6oeoh8dghg1awxzqs8ama918a', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, nome, telefone, email, ...body }),
-  }).catch(() => {});
+  const webhookEventId = crypto.randomUUID();
+  const webhookTask = sendMakeWebhook(env, { id, nome, telefone, email, status: 'novo', ...body }).then((res) =>
+    logCapiEvent(env, { leadId: id, eventName: 'Webhook:novo', eventId: webhookEventId, result: res })
+  );
 
   if (waitUntil) {
     waitUntil(capiTask);

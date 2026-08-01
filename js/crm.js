@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const noteForm = document.getElementById('noteForm');
   const noteText = document.getElementById('noteText');
 
-  const STATUSES = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
+  const STATUSES = ['novo', 'em_contato', 'qualificado', 'reuniao_agendada', 'fechado', 'descartado'];
   let leadsById = {};
   let openLeadId = null;
 
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function renderBoard(leads) {
     leadsById = {};
-    const byStatus = { novo: [], em_contato: [], qualificado: [], fechado: [], descartado: [] };
+    const byStatus = { novo: [], em_contato: [], qualificado: [], reuniao_agendada: [], fechado: [], descartado: [] };
 
     leads.forEach((lead) => {
       leadsById[lead.id] = lead;

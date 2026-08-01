@@ -1,8 +1,16 @@
 import { json } from '../../../_lib/response.js';
 import { sendMetaEvent, logCapiEvent } from '../../../_lib/meta-capi.js';
 import { sendGoogleAdsConversion } from '../../../_lib/google-ads-capi.js';
+import { sendMakeWebhook } from '../../../_lib/make-webhook.js';
+import { tagMailchimpContact } from '../../../_lib/mailchimp.js';
 
-const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'fechado', 'descartado'];
+const VALID_STATUS = ['novo', 'em_contato', 'qualificado', 'reuniao_agendada', 'fechado', 'descartado'];
+const KEY_STATUSES = ['reuniao_agendada', 'fechado', 'descartado'];
+const STATUS_TAGS = {
+  reuniao_agendada: 'crm-reuniao-agendada',
+  fechado: 'crm-fechado',
+  descartado: 'crm-descartado',
+};
 
 export async function onRequestPatch({ request, env, params, waitUntil }) {
   const body = await request.json().catch(() => null);
@@ -33,41 +41,94 @@ export async function onRequestPatch({ request, env, params, waitUntil }) {
     return json({ error: 'Lead não encontrado' }, 404);
   }
 
-  if (body.status === 'fechado') {
+  if (KEY_STATUSES.includes(body.status)) {
     const lead = await env.DB.prepare(`SELECT * FROM leads WHERE id = ?`).bind(params.id).first();
     if (lead) {
-      const metaEventId = crypto.randomUUID();
-      const metaTask = sendMetaEvent({
-        env,
-        eventName: 'Purchase',
-        eventId: metaEventId,
-        nome: lead.nome,
-        email: lead.email,
-        telefone: lead.telefone,
-        clientIp: lead.ip,
-        userAgent: lead.user_agent,
-        value: valorFechado,
-        currency: 'BRL',
-      }).then((res) =>
-        logCapiEvent(env, { leadId: params.id, eventName: 'Purchase', eventId: metaEventId, result: res })
+      const tasks = [];
+
+      const webhookEventId = crypto.randomUUID();
+      tasks.push(
+        sendMakeWebhook(env, {
+          id: params.id,
+          nome: lead.nome,
+          telefone: lead.telefone,
+          email: lead.email,
+          status: body.status,
+        }).then((res) =>
+          logCapiEvent(env, {
+            leadId: params.id,
+            eventName: `Webhook:${body.status}`,
+            eventId: webhookEventId,
+            result: res,
+          })
+        )
       );
 
-      const googleEventId = crypto.randomUUID();
-      const googleTask = sendGoogleAdsConversion({
-        env,
-        gclid: lead.gclid,
-        value: valorFechado,
-        currency: 'BRL',
-      }).then((res) =>
-        logCapiEvent(env, {
-          leadId: params.id,
-          eventName: 'GoogleAdsConversion',
-          eventId: googleEventId,
-          result: res,
-        })
-      );
+      const tag = STATUS_TAGS[body.status];
+      if (tag) {
+        tasks.push(
+          tagMailchimpContact(env, { email: lead.email, nome: lead.nome, tags: [tag] }).then((res) =>
+            logCapiEvent(env, { leadId: params.id, eventName: `Mailchimp:${tag}`, eventId: crypto.randomUUID(), result: res })
+          )
+        );
+      }
 
-      const combined = Promise.all([metaTask, googleTask]);
+      if (body.status === 'reuniao_agendada') {
+        const scheduleEventId = crypto.randomUUID();
+        tasks.push(
+          sendMetaEvent({
+            env,
+            eventName: 'Schedule',
+            eventId: scheduleEventId,
+            nome: lead.nome,
+            email: lead.email,
+            telefone: lead.telefone,
+            clientIp: lead.ip,
+            userAgent: lead.user_agent,
+          }).then((res) =>
+            logCapiEvent(env, { leadId: params.id, eventName: 'Schedule', eventId: scheduleEventId, result: res })
+          )
+        );
+      }
+
+      if (body.status === 'fechado') {
+        const metaEventId = crypto.randomUUID();
+        tasks.push(
+          sendMetaEvent({
+            env,
+            eventName: 'Purchase',
+            eventId: metaEventId,
+            nome: lead.nome,
+            email: lead.email,
+            telefone: lead.telefone,
+            clientIp: lead.ip,
+            userAgent: lead.user_agent,
+            value: valorFechado,
+            currency: 'BRL',
+          }).then((res) =>
+            logCapiEvent(env, { leadId: params.id, eventName: 'Purchase', eventId: metaEventId, result: res })
+          )
+        );
+
+        const googleEventId = crypto.randomUUID();
+        tasks.push(
+          sendGoogleAdsConversion({
+            env,
+            gclid: lead.gclid,
+            value: valorFechado,
+            currency: 'BRL',
+          }).then((res) =>
+            logCapiEvent(env, {
+              leadId: params.id,
+              eventName: 'GoogleAdsConversion',
+              eventId: googleEventId,
+              result: res,
+            })
+          )
+        );
+      }
+
+      const combined = Promise.all(tasks);
       if (waitUntil) waitUntil(combined);
       else await combined;
     }

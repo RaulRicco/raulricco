@@ -65,6 +65,7 @@
       color: var(--text);
     }
 
+    .kanban-column[data-status="reuniao_agendada"] .kanban-column-head { color: #0055A4; }
     .kanban-column[data-status="fechado"] .kanban-column-head { color: var(--success); }
     .kanban-column[data-status="descartado"] .kanban-column-head { color: var(--text-muted); }
 
@@ -248,6 +249,10 @@
         <div class="kanban-column" data-status="qualificado">
           <div class="kanban-column-head"><span>Qualificado</span><span class="count" data-count="qualificado">0</span></div>
           <div class="kanban-cards" data-cards="qualificado"></div>
+        </div>
+        <div class="kanban-column" data-status="reuniao_agendada">
+          <div class="kanban-column-head"><span>Reunião agendada</span><span class="count" data-count="reuniao_agendada">0</span></div>
+          <div class="kanban-cards" data-cards="reuniao_agendada"></div>
         </div>
         <div class="kanban-column" data-status="fechado">
           <div class="kanban-column-head"><span>Fechado</span><span class="count" data-count="fechado">0</span></div>
