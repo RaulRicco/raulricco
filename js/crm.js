@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const logoutBtn = document.getElementById('logoutBtn');
   const kanbanBoard = document.getElementById('kanbanBoard');
   const totalFechadoEl = document.getElementById('totalFechado');
+  const exportBtn = document.getElementById('exportBtn');
 
   const leadModalOverlay = document.getElementById('leadModalOverlay');
   const leadModalClose = document.getElementById('leadModalClose');
@@ -390,6 +391,28 @@ document.addEventListener('DOMContentLoaded', function () {
       loginError.classList.add('visible');
     }
     submitBtn.disabled = false;
+  });
+
+  function csvEscape(value) {
+    const str = String(value ?? '');
+    if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+    return str;
+  }
+
+  exportBtn.addEventListener('click', function () {
+    const leads = Object.values(leadsById);
+    const rows = [
+      ['Nome', 'Telefone', 'Email'],
+      ...leads.map((lead) => [lead.nome, lead.telefone, lead.email]),
+    ];
+    const csv = rows.map((row) => row.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   });
 
   logoutBtn.addEventListener('click', async function () {
