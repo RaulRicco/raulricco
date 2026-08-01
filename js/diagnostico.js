@@ -228,9 +228,6 @@ document.addEventListener('DOMContentLoaded', function () {
         fbq('track', 'Lead', {}, { eventID: eventId });
       }
 
-      const waMessage = encodeURIComponent('quero meu diagnostico gratuito');
-      document.getElementById('whatsappLink').href = `https://wa.me/5561991745489?text=${waMessage}`;
-
       showStep('success');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Enviar';
