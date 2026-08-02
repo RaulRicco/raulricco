@@ -354,6 +354,12 @@ document.addEventListener('DOMContentLoaded', function () {
       lead.ja_investe_trafego === 'sim' ? 'Sim' : lead.ja_investe_trafego === 'nao' ? 'Não' : '—';
     document.getElementById('leadModalQuandoInvestiu').textContent = lead.quando_investiu || '—';
     document.getElementById('leadModalQuantoInvestir').textContent = lead.quanto_disposto_investir || '—';
+    document.getElementById('leadModalAchaTrafegoMelhora').textContent = lead.acha_trafego_melhora_faturamento || '—';
+    document.getElementById('leadModalFaturamentoAtual').textContent = lead.faturamento_mensal_atual || '—';
+    document.getElementById('leadModalMetaFaturamento').textContent = lead.meta_faturamento || '—';
+    document.getElementById('leadModalPrazoMeta').textContent = lead.prazo_meta_faturamento || '—';
+    document.getElementById('leadModalInstagram').textContent = lead.instagram_arroba || '—';
+    document.getElementById('leadModalPopulacaoCidade').textContent = lead.populacao_cidade || '—';
     document.getElementById('leadModalCreatedAt').textContent = formatDate(lead.created_at);
 
     const sourceContainer = document.getElementById('leadModalSource');
