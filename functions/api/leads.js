@@ -36,9 +36,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
     `INSERT INTO leads (
       id, segmento, tempo_negocio, ja_investe_trafego, quando_investiu,
       quanto_disposto_investir, retencao_atual, origem, nome, telefone, email, status,
+      acha_trafego_melhora_faturamento, faturamento_mensal_atual, meta_faturamento,
+      prazo_meta_faturamento, instagram_arroba, populacao_cidade,
       utm_source, utm_medium, utm_campaign, utm_term, utm_content,
       gclid, fbclid, user_agent, ip
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'novo', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'novo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       id,
@@ -52,6 +54,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
       nome,
       telefone,
       email,
+      body.acha_trafego_melhora_faturamento || null,
+      body.faturamento_mensal_atual || null,
+      body.meta_faturamento || null,
+      body.prazo_meta_faturamento || null,
+      body.instagram_arroba || null,
+      body.populacao_cidade || null,
       body.utm_source || null,
       body.utm_medium || null,
       body.utm_campaign || null,

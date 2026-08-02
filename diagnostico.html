@@ -277,6 +277,77 @@
         </div>
 
         <div class="quiz-step" data-step="6">
+          <h3>Você acha que o tráfego pago pode melhorar seu faturamento?</h3>
+          <div class="quiz-options" data-field="acha_trafego_melhora_faturamento">
+            <button type="button" class="quiz-option">Sim, tenho certeza</button>
+            <button type="button" class="quiz-option">Acho que sim, mas não sei dizer quanto</button>
+            <button type="button" class="quiz-option">Não sei</button>
+          </div>
+          <div class="quiz-nav">
+            <button type="button" class="btn btn-outline btn-back" data-back>Voltar</button>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="quiz-step" data-step="7">
+          <h3>Quanto seu negócio fatura por mês hoje, em média?</h3>
+          <div class="quiz-options" data-field="faturamento_mensal_atual">
+            <button type="button" class="quiz-option">Até R$ 10 mil/mês</button>
+            <button type="button" class="quiz-option">R$ 10 mil a R$ 30 mil/mês</button>
+            <button type="button" class="quiz-option">R$ 30 mil a R$ 60 mil/mês</button>
+            <button type="button" class="quiz-option">R$ 60 mil a R$ 100 mil/mês</button>
+            <button type="button" class="quiz-option">Acima de R$ 100 mil/mês</button>
+          </div>
+          <div class="quiz-nav">
+            <button type="button" class="btn btn-outline btn-back" data-back>Voltar</button>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="quiz-step" data-step="8">
+          <h3>Quanto você pretende faturar, e em quanto tempo?</h3>
+          <div class="quiz-field">
+            <label for="q-meta-faturamento">Ex: R$ 50 mil por mês</label>
+            <input type="text" id="q-meta-faturamento" name="meta_faturamento" autocomplete="off" required>
+          </div>
+          <div class="quiz-field">
+            <label for="q-prazo-meta">Em quanto tempo? Ex: 6 meses, 1 ano...</label>
+            <input type="text" id="q-prazo-meta" name="prazo_meta_faturamento" autocomplete="off" required>
+          </div>
+          <p class="quiz-error">Preciso da sua meta de faturamento e do prazo para continuar.</p>
+          <div class="quiz-nav">
+            <button type="button" class="btn btn-outline btn-back" data-back>Voltar</button>
+            <button type="button" class="btn btn-primary" data-next>Avançar</button>
+          </div>
+        </div>
+
+        <div class="quiz-step" data-step="9">
+          <h3>Qual o @ do seu Instagram?</h3>
+          <div class="quiz-field">
+            <label for="q-instagram">@seunegocio</label>
+            <input type="text" id="q-instagram" name="instagram_arroba" autocomplete="off">
+          </div>
+          <div class="quiz-nav">
+            <button type="button" class="btn btn-outline btn-back" data-back>Voltar</button>
+            <button type="button" class="btn btn-primary" data-next>Avançar</button>
+          </div>
+        </div>
+
+        <div class="quiz-step" data-step="10">
+          <h3>Quantos habitantes tem a sua cidade, mais ou menos?</h3>
+          <div class="quiz-options" data-field="populacao_cidade">
+            <button type="button" class="quiz-option">Até 50 mil habitantes</button>
+            <button type="button" class="quiz-option">50 mil a 200 mil habitantes</button>
+            <button type="button" class="quiz-option">200 mil a 1 milhão de habitantes</button>
+            <button type="button" class="quiz-option">Acima de 1 milhão de habitantes</button>
+          </div>
+          <div class="quiz-nav">
+            <button type="button" class="btn btn-outline btn-back" data-back>Voltar</button>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="quiz-step" data-step="11">
           <h3>Qual o seu nome?</h3>
           <div class="quiz-field">
             <label for="q-nome">Nome completo</label>
@@ -289,7 +360,7 @@
           </div>
         </div>
 
-        <div class="quiz-step" data-step="7">
+        <div class="quiz-step" data-step="12">
           <h3>Qual seu telefone/WhatsApp?</h3>
           <div class="quiz-field">
             <label for="q-telefone">(XX) XXXXX-XXXX</label>
@@ -302,11 +373,11 @@
           </div>
         </div>
 
-        <div class="quiz-step" data-step="8">
+        <div class="quiz-step" data-step="13">
           <h3>Qual seu melhor e-mail?</h3>
           <div class="quiz-field">
-            <label for="q-email">seuemail@exemplo.com</label>
-            <input type="email" id="q-email" name="email" autocomplete="email" required>
+            <label for="q-email">Coloque o melhor e-mail, pois enviaremos seu diagnóstico por lá</label>
+            <input type="email" id="q-email" name="email" autocomplete="email" required placeholder="seuemail@exemplo.com">
           </div>
           <p class="quiz-error">Informe um e-mail válido.</p>
           <div class="quiz-nav">
@@ -319,7 +390,7 @@
           <div class="quiz-success">
             <div class="check-circle">✓</div>
             <h3>Recebi suas informações!</h3>
-            <p>Para confirmar a solicitação do seu diagnóstico gratuito, verifique sua caixa de entrada e confirme o e-mail que acabamos de enviar.</p>
+            <p>Você vai receber seu diagnóstico gratuito por e-mail em instantes. Fique de olho na sua caixa de entrada (e na de spam, por garantia).</p>
           </div>
         </div>
       </form>

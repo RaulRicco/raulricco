@@ -143,21 +143,25 @@ document.addEventListener('DOMContentLoaded', function () {
   form.querySelectorAll('[data-next]').forEach((btn) => {
     btn.addEventListener('click', function () {
       const stepEl = this.closest('.quiz-step');
-      const input = stepEl.querySelector('input');
+      const inputs = Array.from(stepEl.querySelectorAll('input'));
       const errorEl = stepEl.querySelector('.quiz-error');
 
-      if (input && input.hasAttribute('required') && !input.value.trim()) {
-        errorEl?.classList.add('visible');
-        input.focus();
-        return;
-      }
-      if (input && input.type === 'email' && input.value.trim() && !input.checkValidity()) {
-        errorEl?.classList.add('visible');
-        input.focus();
-        return;
+      for (const input of inputs) {
+        if (input.hasAttribute('required') && !input.value.trim()) {
+          errorEl?.classList.add('visible');
+          input.focus();
+          return;
+        }
+        if (input.type === 'email' && input.value.trim() && !input.checkValidity()) {
+          errorEl?.classList.add('visible');
+          input.focus();
+          return;
+        }
       }
       errorEl?.classList.remove('visible');
-      if (input) quizState.answers[input.name] = input.value.trim();
+      inputs.forEach((input) => {
+        quizState.answers[input.name] = input.value.trim();
+      });
       showStep(getNextStep(quizState.currentStep));
     });
   });
