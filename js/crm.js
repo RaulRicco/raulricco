@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const kanbanBoard = document.getElementById('kanbanBoard');
   const totalFechadoEl = document.getElementById('totalFechado');
   const exportBtn = document.getElementById('exportBtn');
+  const leadSearchInput = document.getElementById('leadSearch');
 
   const leadModalOverlay = document.getElementById('leadModalOverlay');
   const leadModalClose = document.getElementById('leadModalClose');
@@ -24,6 +25,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const POLL_INTERVAL_MS = 30000;
   const BASE_TITLE = document.title;
   let leadsById = {};
+  let allLeads = [];
+  let searchTerm = '';
   let openLeadId = null;
   const expandedColumns = new Set();
   const knownLeadIds = new Set();
@@ -90,11 +93,31 @@ document.addEventListener('DOMContentLoaded', function () {
     return div.innerHTML;
   }
 
+  function normalize(str) {
+    return (str || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '');
+  }
+
+  function filterLeads(leads, term) {
+    const normalizedTerm = normalize(term).trim();
+    if (!normalizedTerm) return leads;
+    return leads.filter((lead) => {
+      const haystack = [lead.nome, lead.telefone, lead.email, lead.segmento].map(normalize).join(' ');
+      return haystack.includes(normalizedTerm);
+    });
+  }
+
   function renderBoard(leads) {
+    allLeads = leads;
+    const filteredLeads = filterLeads(leads, searchTerm);
+
     leadsById = {};
     const byStatus = { novo: [], em_contato: [], qualificado: [], reuniao_agendada: [], fechado: [], descartado: [] };
 
-    leads.forEach((lead) => {
+    filteredLeads.forEach((lead) => {
       leadsById[lead.id] = lead;
       if (byStatus[lead.status]) byStatus[lead.status].push(lead);
     });
@@ -172,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
           expandedColumns.add(status);
         }
-        renderBoard(Object.values(leadsById));
+        renderBoard(allLeads);
       });
     });
   }
@@ -487,6 +510,11 @@ document.addEventListener('DOMContentLoaded', function () {
       loginError.classList.add('visible');
     }
     submitBtn.disabled = false;
+  });
+
+  leadSearchInput.addEventListener('input', function () {
+    searchTerm = this.value;
+    renderBoard(allLeads);
   });
 
   function csvEscape(value) {
