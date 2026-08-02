@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', function () {
   const totalFechadoEl = document.getElementById('totalFechado');
   const exportBtn = document.getElementById('exportBtn');
   const leadSearchInput = document.getElementById('leadSearch');
+  const viewToggle = document.getElementById('viewToggle');
+  const leadTableWrap = document.getElementById('leadTableWrap');
+  const leadTableBody = document.getElementById('leadTableBody');
+  const leadTableEmpty = document.getElementById('leadTableEmpty');
+  const statusMenu = document.getElementById('statusMenu');
 
   const leadModalOverlay = document.getElementById('leadModalOverlay');
   const leadModalClose = document.getElementById('leadModalClose');
@@ -21,6 +26,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const noteText = document.getElementById('noteText');
 
   const STATUSES = ['novo', 'em_contato', 'qualificado', 'reuniao_agendada', 'fechado', 'descartado'];
+  const STATUS_LABELS = {
+    novo: 'Novo',
+    em_contato: 'Em contato',
+    qualificado: 'Qualificado',
+    reuniao_agendada: 'Reunião agendada',
+    fechado: 'Fechado',
+    descartado: 'Descartado',
+  };
   const CARDS_PAGE_SIZE = 6;
   const POLL_INTERVAL_MS = 30000;
   const BASE_TITLE = document.title;
@@ -28,6 +41,8 @@ document.addEventListener('DOMContentLoaded', function () {
   let allLeads = [];
   let searchTerm = '';
   let openLeadId = null;
+  let currentView = 'kanban';
+  let statusMenuLeadId = null;
   const expandedColumns = new Set();
   const knownLeadIds = new Set();
   let seenNewLeads = 0;
@@ -163,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
               <div class="kanban-card-links">
                 <a href="${waLink}" target="_blank" rel="noopener noreferrer" data-stop-propagation>WhatsApp</a>
                 <a href="mailto:${escapeHtml(lead.email)}" data-stop-propagation>Email</a>
+                <button type="button" class="kanban-card-status-btn" data-stop-propagation data-status-menu-id="${lead.id}" aria-label="Mudar status">⋮</button>
                 <button type="button" class="kanban-card-delete" data-stop-propagation data-delete-id="${lead.id}" aria-label="Excluir lead do CRM">Excluir</button>
               </div>
             </div>
@@ -184,7 +200,109 @@ document.addEventListener('DOMContentLoaded', function () {
     totalFechadoEl.textContent = formatCurrency(totalFechado);
     attachDragEvents();
     attachToggleEvents();
+    renderTable(filteredLeads);
   }
+
+  function renderTable(leads) {
+    if (leads.length === 0) {
+      leadTableBody.innerHTML = '';
+      leadTableEmpty.hidden = false;
+      return;
+    }
+    leadTableEmpty.hidden = true;
+
+    const sorted = [...leads].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    leadTableBody.innerHTML = sorted
+      .map((lead) => {
+        const digits = (lead.telefone || '').replace(/\D/g, '');
+        const waLink = digits ? `https://wa.me/55${digits}` : '#';
+        return `
+          <tr data-id="${lead.id}">
+            <td class="lead-table-name">${escapeHtml(lead.nome)}</td>
+            <td>${escapeHtml(lead.telefone || '—')}</td>
+            <td>${escapeHtml(lead.segmento || '—')}</td>
+            <td>${escapeHtml(lead.quanto_disposto_investir || '—')}</td>
+            <td><span class="status-badge" data-status="${lead.status}" data-status-menu-id="${lead.id}" data-stop-propagation>${STATUS_LABELS[lead.status] || lead.status}</span></td>
+            <td>${formatDate(lead.created_at)}</td>
+            <td>
+              <div class="lead-table-actions">
+                <a href="${waLink}" target="_blank" rel="noopener noreferrer" data-stop-propagation>WhatsApp</a>
+                <a href="mailto:${escapeHtml(lead.email)}" data-stop-propagation>Email</a>
+                <button type="button" class="kanban-card-delete" data-stop-propagation data-delete-id="${lead.id}" aria-label="Excluir lead do CRM">Excluir</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    attachTableEvents();
+  }
+
+  function attachTableEvents() {
+    leadTableBody.querySelectorAll('tr').forEach((row) => {
+      row.addEventListener('click', function (e) {
+        if (e.target.closest('[data-stop-propagation]')) return;
+        openLeadModal(this.dataset.id);
+      });
+    });
+    leadTableBody.querySelectorAll('[data-delete-id]').forEach((btn) => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteLead(this.dataset.deleteId);
+      });
+    });
+    leadTableBody.querySelectorAll('[data-status-menu-id]').forEach((el) => {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openStatusMenu(this.dataset.statusMenuId, this);
+      });
+    });
+  }
+
+  function setView(view) {
+    currentView = view;
+    kanbanBoard.hidden = view !== 'kanban';
+    leadTableWrap.hidden = view !== 'list';
+    viewToggle.querySelectorAll('.view-toggle-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.view === view);
+    });
+  }
+
+  viewToggle.querySelectorAll('.view-toggle-btn').forEach((btn) => {
+    btn.addEventListener('click', function () {
+      setView(this.dataset.view);
+    });
+  });
+
+  function openStatusMenu(leadId, anchorEl) {
+    statusMenuLeadId = leadId;
+    const rect = anchorEl.getBoundingClientRect();
+    statusMenu.style.top = `${rect.bottom + 6}px`;
+    statusMenu.style.left = `${Math.min(rect.left, window.innerWidth - 200)}px`;
+    statusMenu.hidden = false;
+  }
+
+  function closeStatusMenu() {
+    statusMenu.hidden = true;
+    statusMenuLeadId = null;
+  }
+
+  statusMenu.querySelectorAll('.status-menu-item').forEach((item) => {
+    item.addEventListener('click', async function () {
+      const newStatus = this.dataset.status;
+      const leadId = statusMenuLeadId;
+      closeStatusMenu();
+      if (leadId) await moveLead(leadId, newStatus);
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!statusMenu.hidden && !statusMenu.contains(e.target) && !e.target.closest('[data-status-menu-id]')) {
+      closeStatusMenu();
+    }
+  });
 
   function attachToggleEvents() {
     kanbanBoard.querySelectorAll('[data-toggle-status]').forEach((btn) => {
@@ -226,6 +344,13 @@ document.addEventListener('DOMContentLoaded', function () {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         deleteLead(this.dataset.deleteId);
+      });
+    });
+
+    kanbanBoard.querySelectorAll('[data-status-menu-id]').forEach((btn) => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openStatusMenu(this.dataset.statusMenuId, this);
       });
     });
 
@@ -547,6 +672,7 @@ document.addEventListener('DOMContentLoaded', function () {
     showLogin();
   });
 
+  setView('kanban');
   loadLeads()
     .then(startPolling)
     .catch(() => showLogin());

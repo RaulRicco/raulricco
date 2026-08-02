@@ -28,6 +28,24 @@
     .crm-search:focus { border-color: var(--accent); outline: none; }
     .crm-search::placeholder { color: var(--text-muted); }
 
+    .view-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .view-toggle-btn {
+      background: var(--bg);
+      border: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .view-toggle-btn + .view-toggle-btn { border-left: 1px solid var(--border); }
+    .view-toggle-btn.active { background: var(--accent); color: #ffffff; }
+
     .login-box { max-width: 380px; margin: 96px auto; }
     .login-box h1 { font-size: 22px; margin-bottom: 24px; text-align: center; }
     .login-box .quiz-field { margin-bottom: 16px; }
@@ -121,6 +139,18 @@
       padding: 0;
     }
     .kanban-card-delete:hover { color: var(--accent); }
+
+    .kanban-card-status-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .kanban-card-status-btn:hover { color: var(--accent); }
 
     .kanban-toggle {
       background: none;
@@ -226,6 +256,81 @@
     @media (max-width: 1100px) {
       .kanban-board { grid-template-columns: repeat(5, 260px); }
     }
+
+    /* ── Lista (tabela) ── */
+    .lead-table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow-x: auto;
+    }
+    .lead-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .lead-table th {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .lead-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .lead-table tbody tr:last-child td { border-bottom: none; }
+    .lead-table tbody tr { cursor: pointer; }
+    .lead-table tbody tr:hover { background: var(--bg); }
+    .lead-table-name { font-weight: 600; }
+    .lead-table-actions { display: flex; align-items: center; gap: 10px; }
+    .lead-table-actions a { color: var(--accent); font-size: 12px; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .status-badge[data-status="reuniao_agendada"] { color: #0055A4; border-color: rgba(0, 85, 164, 0.4); }
+    .status-badge[data-status="fechado"] { color: var(--success); border-color: rgba(46, 160, 90, 0.4); }
+    .status-badge[data-status="descartado"] { color: var(--text-muted); }
+    .status-badge[data-status="qualificado"] { color: var(--accent); border-color: rgba(255, 71, 87, 0.4); }
+
+    /* ── Menu suspenso de status ── */
+    .status-menu {
+      position: fixed;
+      z-index: 400;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      min-width: 180px;
+      overflow: hidden;
+    }
+    .status-menu[hidden] { display: none; }
+    .status-menu-item {
+      background: none;
+      border: none;
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .status-menu-item:hover { background: var(--bg); color: var(--accent); }
+    .status-menu-item + .status-menu-item { border-top: 1px solid var(--border); }
   </style>
 </head>
 <body>
@@ -258,6 +363,10 @@
         <h1>Leads — Diagnóstico Gratuito</h1>
         <div class="crm-header-actions">
           <input type="search" id="leadSearch" class="crm-search" placeholder="Buscar por nome, telefone, email ou segmento...">
+          <div class="view-toggle" id="viewToggle">
+            <button type="button" class="view-toggle-btn active" data-view="kanban">Kanban</button>
+            <button type="button" class="view-toggle-btn" data-view="list">Lista</button>
+          </div>
           <span class="crm-total-fechado">Fechado no mês: <strong id="totalFechado">R$ 0</strong></span>
           <a href="dashboard.html" class="btn btn-outline btn-sm">Ver trackeamento</a>
           <button class="btn btn-outline btn-sm" id="exportBtn">Exportar CSV</button>
@@ -291,7 +400,34 @@
           <div class="kanban-cards" data-cards="descartado"></div>
         </div>
       </div>
+
+      <div class="lead-table-wrap" id="leadTableWrap" hidden>
+        <table class="lead-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Segmento</th>
+              <th>Investimento</th>
+              <th>Status</th>
+              <th>Recebido em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="leadTableBody"></tbody>
+        </table>
+        <div class="empty-column" id="leadTableEmpty" hidden>Nenhum lead encontrado</div>
+      </div>
     </div>
+  </div>
+
+  <div class="status-menu" id="statusMenu" hidden>
+    <button type="button" class="status-menu-item" data-status="novo">Novo</button>
+    <button type="button" class="status-menu-item" data-status="em_contato">Em contato</button>
+    <button type="button" class="status-menu-item" data-status="qualificado">Qualificado</button>
+    <button type="button" class="status-menu-item" data-status="reuniao_agendada">Reunião agendada</button>
+    <button type="button" class="status-menu-item" data-status="fechado">Fechado</button>
+    <button type="button" class="status-menu-item" data-status="descartado">Descartado</button>
   </div>
 
   <div class="lead-modal-overlay" id="leadModalOverlay" hidden>
