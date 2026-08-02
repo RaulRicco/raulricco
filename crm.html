@@ -27,6 +27,17 @@
     }
     .crm-search:focus { border-color: var(--accent); outline: none; }
     .crm-search::placeholder { color: var(--text-muted); }
+    .crm-filter {
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .crm-filter:focus { border-color: var(--accent); outline: none; }
 
     .view-toggle {
       display: flex;
@@ -364,6 +375,15 @@
         <h1>Leads — Diagnóstico Gratuito</h1>
         <div class="crm-header-actions">
           <input type="search" id="leadSearch" class="crm-search" placeholder="Buscar por nome, telefone, email ou segmento...">
+          <select id="sourceFilter" class="crm-filter">
+            <option value="">Todas as origens</option>
+            <option value="Google Ads">Google Ads</option>
+            <option value="Meta Ads">Meta Ads</option>
+            <option value="Direto">Direto</option>
+          </select>
+          <select id="segmentoFilter" class="crm-filter">
+            <option value="">Todos os segmentos</option>
+          </select>
           <div class="view-toggle" id="viewToggle">
             <button type="button" class="view-toggle-btn active" data-view="kanban">Kanban</button>
             <button type="button" class="view-toggle-btn" data-view="list">Lista</button>

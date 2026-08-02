@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const totalFechadoEl = document.getElementById('totalFechado');
   const exportBtn = document.getElementById('exportBtn');
   const leadSearchInput = document.getElementById('leadSearch');
+  const sourceFilterSelect = document.getElementById('sourceFilter');
+  const segmentoFilterSelect = document.getElementById('segmentoFilter');
   const viewToggle = document.getElementById('viewToggle');
   const leadTableWrap = document.getElementById('leadTableWrap');
   const leadTableBody = document.getElementById('leadTableBody');
@@ -40,6 +42,9 @@ document.addEventListener('DOMContentLoaded', function () {
   let leadsById = {};
   let allLeads = [];
   let searchTerm = '';
+  let sourceFilter = '';
+  let segmentoFilter = '';
+  let knownSegmentos = new Set();
   let openLeadId = null;
   let currentView = 'kanban';
   let statusMenuLeadId = null;
@@ -116,18 +121,36 @@ document.addEventListener('DOMContentLoaded', function () {
       .replace(/[̀-ͯ]/g, '');
   }
 
-  function filterLeads(leads, term) {
+  function filterLeads(leads, term, source, segmento) {
     const normalizedTerm = normalize(term).trim();
-    if (!normalizedTerm) return leads;
     return leads.filter((lead) => {
-      const haystack = [lead.nome, lead.telefone, lead.email, lead.segmento].map(normalize).join(' ');
-      return haystack.includes(normalizedTerm);
+      if (normalizedTerm) {
+        const haystack = [lead.nome, lead.telefone, lead.email, lead.segmento].map(normalize).join(' ');
+        if (!haystack.includes(normalizedTerm)) return false;
+      }
+      if (source && detectSource(lead).label !== source) return false;
+      if (segmento && lead.segmento !== segmento) return false;
+      return true;
     });
+  }
+
+  function refreshSegmentoOptions(leads) {
+    const segmentos = new Set(leads.map((lead) => lead.segmento).filter(Boolean));
+    if (segmentos.size === knownSegmentos.size && [...segmentos].every((s) => knownSegmentos.has(s))) return;
+    knownSegmentos = segmentos;
+
+    const current = segmentoFilterSelect.value;
+    const sortedSegmentos = [...segmentos].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    segmentoFilterSelect.innerHTML =
+      '<option value="">Todos os segmentos</option>' +
+      sortedSegmentos.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    if (sortedSegmentos.includes(current)) segmentoFilterSelect.value = current;
   }
 
   function renderBoard(leads) {
     allLeads = leads;
-    const filteredLeads = filterLeads(leads, searchTerm);
+    refreshSegmentoOptions(leads);
+    const filteredLeads = filterLeads(leads, searchTerm, sourceFilter, segmentoFilter);
 
     leadsById = {};
     const byStatus = { novo: [], em_contato: [], qualificado: [], reuniao_agendada: [], fechado: [], descartado: [] };
@@ -639,6 +662,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
   leadSearchInput.addEventListener('input', function () {
     searchTerm = this.value;
+    renderBoard(allLeads);
+  });
+
+  sourceFilterSelect.addEventListener('change', function () {
+    sourceFilter = this.value;
+    renderBoard(allLeads);
+  });
+
+  segmentoFilterSelect.addEventListener('change', function () {
+    segmentoFilter = this.value;
     renderBoard(allLeads);
   });
 
