@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compra confirmada · A Trilha: Negócio Local</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0A0A0A;
+    --bg-card: #1A1A1A;
+    --color-green: #00c150;
+    --color-white: #FFFFFF;
+    --color-gray-light: #CCCCCC;
+    --color-gray-medium: #999999;
+    --border-subtle: rgba(255,255,255,0.08);
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--color-white);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 2.5rem 1.25rem;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; text-align: center; }
+
+  .check-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    background: rgba(0,193,80,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .check-icon svg { width: 30px; height: 30px; }
+
+  .kicker {
+    color: var(--color-green);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 6vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 0.9rem;
+  }
+  .subtitle {
+    color: var(--color-gray-light);
+    font-size: 1.05rem;
+    max-width: 46ch;
+    margin: 0 auto 2rem;
+  }
+
+  section.block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+  }
+  section.block h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .steps li {
+    display: flex;
+    gap: 0.8rem;
+    color: var(--color-gray-light);
+    font-size: 0.95rem;
+  }
+  .steps .n {
+    background: var(--color-green);
+    color: var(--bg-primary);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .steps strong { color: var(--color-white); }
+
+  .btn {
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    background: var(--color-green);
+    color: var(--bg-primary);
+  }
+
+  .support {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--color-gray-medium);
+  }
+  .support a { color: var(--color-green); text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="check-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#00c150" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  </div>
+
+  <div class="kicker">Compra confirmada</div>
+  <h1>Sua vaga na Trilha está garantida</h1>
+  <p class="subtitle">Você já tem acesso completo ao curso. É só seguir os passos abaixo para começar agora mesmo.</p>
+
+  <section class="block">
+    <h2>Próximos passos</h2>
+    <ul class="steps">
+      <li><span class="n">1</span><span>Você vai receber um <strong>e-mail de confirmação</strong> com os dados de acesso — confira também a caixa de spam/promoções.</span></li>
+      <li><span class="n">2</span><span>Clique no botão abaixo para <strong>começar pela primeira aula</strong> agora mesmo.</span></li>
+      <li><span class="n">3</span><span>Reserve um tempo sem pressa — a trilha é seu ritmo, do jeito que fizer sentido para o seu negócio.</span></li>
+    </ul>
+  </section>
+
+  <a class="btn" href="00-boas-vindas.html">Começar a trilha agora →</a>
+
+  <p class="support">Alguma dúvida sobre o acesso? Fale com a gente: <a href="mailto:contato@raulricco.com.br">contato@raulricco.com.br</a></p>
+</div>
+
+</body>
+</html>
