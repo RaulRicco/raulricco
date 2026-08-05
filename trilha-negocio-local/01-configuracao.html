@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Módulo 1: Configuração · A Trilha: Negócio Local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0A0A0A;
+    --bg-card: #1A1A1A;
+    --bg-card-hover: #1F1F1F;
+    --color-green: #00c150;
+    --color-white: #FFFFFF;
+    --color-gray-light: #CCCCCC;
+    --color-gray-medium: #999999;
+    --border-subtle: rgba(255,255,255,0.08);
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--color-white);
+    line-height: 1.6;
+    padding-bottom: 6rem;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 1.25rem; }
+
+  nav.topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    z-index: 10;
+  }
+  nav.topbar .inner {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .back-link {
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .back-link:hover { color: var(--color-white); }
+  .duration-pill {
+    background: rgba(0,193,80,0.12);
+    color: var(--color-green);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+  }
+
+  header.hero { padding: 2.5rem 0 1.5rem; }
+  .kicker {
+    color: var(--color-green);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+  }
+  .objective {
+    color: var(--color-gray-light);
+    font-size: 1.05rem;
+    max-width: 60ch;
+  }
+
+  .lesson-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  .lesson-nav a {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+  }
+  .lesson-nav a:hover { border-color: var(--color-green); color: var(--color-white); }
+
+  section.block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    scroll-margin-top: 5rem;
+  }
+  section.block h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  section.block h2 .n {
+    background: var(--color-green);
+    color: var(--bg-primary);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .sub-objective {
+    color: var(--color-gray-medium);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    margin-left: 34px;
+  }
+
+  .talk-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .talk-points li {
+    display: flex;
+    gap: 0.7rem;
+    color: var(--color-gray-light);
+    font-size: 0.98rem;
+  }
+  .talk-points li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-green);
+    margin-top: 0.55rem;
+  }
+  .talk-points strong { color: var(--color-white); }
+
+  .callout {
+    background: rgba(0,193,80,0.08);
+    border-left: 3px solid var(--color-green);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    color: var(--color-gray-light);
+  }
+  .callout strong { color: var(--color-green); }
+  .callout.warn {
+    background: rgba(255,159,10,0.08);
+    border-left-color: #ff9f0a;
+  }
+  .callout.warn strong { color: #ff9f0a; }
+
+  .checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 1rem;
+  }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    font-size: 0.92rem;
+    color: var(--color-gray-light);
+    cursor: pointer;
+    user-select: none;
+  }
+  .checklist input {
+    margin-top: 0.2rem;
+    width: 17px;
+    height: 17px;
+    accent-color: var(--color-green);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .checklist li.checked span { color: var(--color-gray-medium); text-decoration: line-through; }
+
+  .steps {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 1.1rem 2.6rem;
+    font-size: 0.96rem;
+    color: var(--color-gray-light);
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(0,193,80,0.15);
+    color: var(--color-green);
+    font-weight: 800;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .steps li::after {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 26px;
+    bottom: 0;
+    width: 1px;
+    background: var(--border-subtle);
+  }
+  .steps li:last-child::after { display: none; }
+  .steps li:last-child { padding-bottom: 0; }
+  .steps strong { color: var(--color-white); }
+  .steps code {
+    background: rgba(255,255,255,0.08);
+    color: var(--color-green);
+    padding: 0.15rem 0.4rem;
+    border-radius: 5px;
+    font-size: 0.88em;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  .module-checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .module-checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    font-size: 0.95rem;
+    color: var(--color-gray-light);
+    cursor: pointer;
+    user-select: none;
+  }
+  .module-checklist input {
+    margin-top: 0.2rem;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-green);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .module-checklist li.checked span { color: var(--color-gray-medium); text-decoration: line-through; }
+
+  .complete-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+  }
+  .complete-bar .inner {
+    max-width: 720px;
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.9rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--color-green);
+    color: var(--bg-primary);
+  }
+  .btn-primary.done { background: var(--bg-card-hover); color: var(--color-green); border: 1px solid var(--color-green); }
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--color-gray-light);
+    border: 1px solid var(--border-subtle);
+    flex: 0 0 auto;
+    padding: 0.9rem 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="inner">
+    <a class="back-link" href="index.html">← Trilha completa</a>
+    <span class="duration-pill">Passo a passo</span>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Módulo 1</div>
+    <h1>Configuração</h1>
+    <p class="objective">Ao final deste módulo, você vai ter toda a estrutura técnica pronta para anunciar: página, Instagram conectado, Business Manager, conta de anúncios e pixel de conversão.</p>
+
+    <nav class="lesson-nav">
+      <a href="#s1">1.1 Análise</a>
+      <a href="#s2">1.2 Página + IG</a>
+      <a href="#s3">1.3 Conectar IG</a>
+      <a href="#s4">1.4 Criar BM</a>
+      <a href="#s5">1.5 Conta de anúncios</a>
+      <a href="#s6">1.6 Pixel</a>
+      <a href="#s7">1.7 Checkpoint</a>
+    </nav>
+  </header>
+
+  <section class="block" id="s1">
+    <h2><span class="n">1.1</span> Verifique o que você já tem</h2>
+    <p class="sub-objective">Antes de criar qualquer coisa do zero, confira se parte da estrutura já existe.</p>
+    <ol class="steps">
+      <li>Acesse <strong>business.facebook.com</strong> com o seu Facebook pessoal.</li>
+      <li>Olhe no menu se já aparece alguma <strong>Business Manager</strong> com o nome do seu negócio.</li>
+      <li>Se já existir uma BM, entre nela e veja em <strong>Contas de anúncios</strong> se já existe alguma criada.</li>
+      <li>Se você já tiver BM e conta de anúncios, pode <strong>pular direto para a etapa 1.7</strong> para conferir se está tudo certo.</li>
+    </ol>
+  </section>
+
+  <section class="block" id="s2">
+    <h2><span class="n">1.2</span> Confira se sua página está pronta para o Instagram</h2>
+    <ol class="steps">
+      <li>Acesse sua página do Facebook e vá em <strong>Configurações → Instagram</strong>.</li>
+      <li>Veja se já aparece uma conta do Instagram conectada.</li>
+      <li>Se aparecer, confirme que é a conta <strong>certa</strong> do seu negócio — não uma pessoal.</li>
+      <li>Se o seu Instagram ainda for uma conta <strong>pessoal</strong>, vá primeiro no próprio app do Instagram e mude o tipo de conta para <strong>Comercial ou Criador de Conteúdo</strong>, antes de tentar conectar.</li>
+    </ol>
+    <div class="callout warn"><strong>Atenção:</strong> se o seu Instagram já estiver conectado a outra Business Manager (sua ou de terceiros), você vai precisar desvincular antes de conseguir conectar na sua BM nova.</div>
+  </section>
+
+  <section class="block" id="s3">
+    <h2><span class="n">1.3</span> Conecte o Instagram à sua página</h2>
+    <ol class="steps">
+      <li>Ainda em <strong>Configurações → Instagram</strong> da sua página do Facebook, clique em <strong>Conectar conta</strong>.</li>
+      <li>Faça login com o usuário e senha do Instagram do seu negócio.</li>
+      <li>Autorize a conexão quando o Instagram pedir confirmação.</li>
+      <li>Confirme que a tela agora mostra o Instagram como <strong>conectado</strong>, com a foto de perfil e nome de usuário corretos.</li>
+    </ol>
+  </section>
+
+  <section class="block" id="s4">
+    <h2><span class="n">1.4</span> Crie sua Business Manager (BM)</h2>
+    <ol class="steps">
+      <li>Acesse <strong>business.facebook.com/overview</strong>.</li>
+      <li>Clique em <strong>Criar conta</strong>.</li>
+      <li>No nome da empresa, use o <strong>nome real do seu negócio</strong> — nunca algo genérico como "minha empresa" ou seu próprio nome.</li>
+      <li>Preencha seu nome e e-mail de contato e confirme.</li>
+      <li>Verifique seu e-mail clicando no link que o Facebook enviar.</li>
+    </ol>
+  </section>
+
+  <section class="block" id="s5">
+    <h2><span class="n">1.5</span> Crie sua conta de anúncios</h2>
+    <ol class="steps">
+      <li>Dentro da sua BM, vá em <strong>Configurações da empresa → Contas → Contas de anúncios</strong>.</li>
+      <li>Clique em <strong>Adicionar → Criar uma nova conta de anúncios</strong>.</li>
+      <li>Dê um nome para a conta (pode ser o nome do seu negócio).</li>
+      <li>Escolha o <strong>fuso horário</strong> (Brasília) e a <strong>moeda (BRL)</strong>.</li>
+      <li>Adicione um <strong>método de pagamento</strong> em Configurações da conta → Faturamento.</li>
+    </ol>
+    <div class="callout warn"><strong>Atenção — não erre aqui:</strong> fuso horário e moeda <strong>não podem ser alterados depois</strong> que a conta é criada. Confira duas vezes antes de confirmar.</div>
+  </section>
+
+  <section class="block" id="s6">
+    <h2><span class="n">1.6</span> Crie e teste seu pixel de conversão</h2>
+    <ol class="steps">
+      <li>Dentro da BM, acesse o <strong>Gerenciador de Eventos</strong>.</li>
+      <li>Clique em <strong>Conectar fontes de dados → Web</strong> e depois em <strong>Pixel do Meta</strong>.</li>
+      <li>Dê um nome ao pixel e informe a URL do seu site, se você tiver um.</li>
+      <li>Se você <strong>não tem site</strong>, não se preocupe: você ainda pode anunciar direcionando para WhatsApp ou formulário — o pixel fica pronto para quando você tiver uma página.</li>
+      <li>Instale o pixel no seu site seguindo as instruções na tela (ou peça para quem administra seu site instalar).</li>
+      <li>Teste se está funcionando: instale a extensão <strong>Meta Pixel Helper</strong> no Chrome, abra seu site e veja se o ícone fica verde.</li>
+    </ol>
+  </section>
+
+  <section class="block" id="s7">
+    <h2><span class="n">1.7</span> Confira se está tudo certo</h2>
+    <p class="sub-objective">Antes de seguir para o Módulo 2, confirme cada item abaixo.</p>
+    <ol class="steps">
+      <li>Sua <strong>página do Facebook</strong> existe e está ativa.</li>
+      <li>Seu <strong>Instagram comercial</strong> está conectado a ela.</li>
+      <li>Você tem uma <strong>Business Manager</strong> criada com o nome do seu negócio.</li>
+      <li>Você tem uma <strong>conta de anúncios</strong> dentro dessa BM, com fuso horário, moeda e pagamento configurados.</li>
+      <li>Seu <strong>pixel</strong> está criado e o Pixel Helper mostra ele funcionando.</li>
+    </ol>
+  </section>
+
+  <section class="block">
+    <h2>Confira seu progresso</h2>
+    <ul class="module-checklist" id="checklist">
+      <li data-key="ck-1-1"><input type="checkbox"><span>1.1 Já verifiquei o que eu já tinha</span></li>
+      <li data-key="ck-1-2"><input type="checkbox"><span>1.2 Conferi minha página e Instagram</span></li>
+      <li data-key="ck-1-3"><input type="checkbox"><span>1.3 Conectei o Instagram à página</span></li>
+      <li data-key="ck-1-4"><input type="checkbox"><span>1.4 Criei minha Business Manager</span></li>
+      <li data-key="ck-1-5"><input type="checkbox"><span>1.5 Criei minha conta de anúncios</span></li>
+      <li data-key="ck-1-6"><input type="checkbox"><span>1.6 Criei e testei meu pixel</span></li>
+      <li data-key="ck-1-7"><input type="checkbox"><span>1.7 Conferi que está tudo certo</span></li>
+    </ul>
+  </section>
+</div>
+
+<div class="complete-bar">
+  <div class="inner">
+    <a class="btn btn-secondary" href="00-boas-vindas.html">← Anterior</a>
+    <button class="btn btn-primary" id="completeBtn">Marcar como concluída</button>
+    <a class="btn btn-secondary" href="02-conceitos.html">Próxima →</a>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'trilha-negocio-local-progress';
+  const MODULE_ID = 'modulo-1';
+  const CHECK_KEY = 'trilha-negocio-local-checks';
+
+  function getDone() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e){ return {}; } }
+  function setDone(obj) { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); }
+  function getChecks() { try { return JSON.parse(localStorage.getItem(CHECK_KEY)) || {}; } catch(e){ return {}; } }
+  function setChecks(obj) { localStorage.setItem(CHECK_KEY, JSON.stringify(obj)); }
+
+  const completeBtn = document.getElementById('completeBtn');
+  function renderBtn() {
+    const done = getDone();
+    if (done[MODULE_ID]) {
+      completeBtn.textContent = '✓ Concluída';
+      completeBtn.classList.add('done');
+    } else {
+      completeBtn.textContent = 'Marcar como concluída';
+      completeBtn.classList.remove('done');
+    }
+  }
+  completeBtn.addEventListener('click', () => {
+    const done = getDone();
+    done[MODULE_ID] = !done[MODULE_ID];
+    setDone(done);
+    renderBtn();
+  });
+  renderBtn();
+
+  const checks = getChecks();
+  document.querySelectorAll('#checklist li').forEach(li => {
+    const key = li.dataset.key;
+    const input = li.querySelector('input');
+    if (checks[key]) { input.checked = true; li.classList.add('checked'); }
+    li.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'INPUT') input.checked = !input.checked;
+      const c = getChecks();
+      c[key] = input.checked;
+      setChecks(c);
+      li.classList.toggle('checked', input.checked);
+    });
+  });
+</script>
+</body>
+</html>

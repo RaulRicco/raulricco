@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boas-vindas · A Trilha: Negócio Local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0A0A0A;
+    --bg-card: #1A1A1A;
+    --bg-card-hover: #1F1F1F;
+    --color-green: #00c150;
+    --color-white: #FFFFFF;
+    --color-gray-light: #CCCCCC;
+    --color-gray-medium: #999999;
+    --border-subtle: rgba(255,255,255,0.08);
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--color-white);
+    line-height: 1.6;
+    padding-bottom: 6rem;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 1.25rem; }
+
+  nav.topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    z-index: 10;
+  }
+  nav.topbar .inner {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .back-link {
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .back-link:hover { color: var(--color-white); }
+  .duration-pill {
+    background: rgba(0,193,80,0.12);
+    color: var(--color-green);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+  }
+
+  header.hero { padding: 2.5rem 0 1.5rem; }
+  .kicker {
+    color: var(--color-green);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+  }
+  .objective {
+    color: var(--color-gray-light);
+    font-size: 1.05rem;
+    max-width: 60ch;
+  }
+
+  section.block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  section.block h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  section.block h2 .n {
+    background: var(--color-green);
+    color: var(--bg-primary);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .talk-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .talk-points li {
+    display: flex;
+    gap: 0.7rem;
+    color: var(--color-gray-light);
+    font-size: 0.98rem;
+  }
+  .talk-points li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-green);
+    margin-top: 0.55rem;
+  }
+  .talk-points strong { color: var(--color-white); }
+
+  .callout {
+    background: rgba(0,193,80,0.08);
+    border-left: 3px solid var(--color-green);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    margin-top: 1.25rem;
+    font-size: 0.95rem;
+    color: var(--color-gray-light);
+  }
+  .callout strong { color: var(--color-green); }
+
+  .checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    font-size: 0.95rem;
+    color: var(--color-gray-light);
+    cursor: pointer;
+    user-select: none;
+  }
+  .checklist input {
+    margin-top: 0.2rem;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-green);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .checklist li.checked span { color: var(--color-gray-medium); text-decoration: line-through; }
+
+  .complete-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+  }
+  .complete-bar .inner {
+    max-width: 720px;
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.9rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--color-green);
+    color: var(--bg-primary);
+  }
+  .btn-primary.done { background: var(--bg-card-hover); color: var(--color-green); border: 1px solid var(--color-green); }
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--color-gray-light);
+    border: 1px solid var(--border-subtle);
+    flex: 0 0 auto;
+    padding: 0.9rem 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="inner">
+    <a class="back-link" href="index.html">← Trilha completa</a>
+    <span class="duration-pill">Antes de começar</span>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Antes de começar</div>
+    <h1>Boas-vindas à trilha</h1>
+    <p class="objective">O que você vai conseguir fazer ao final: sair do zero e ter uma campanha estruturada rodando no Meta Ads, sabendo o porquê de cada configuração — não só copiando passo a passo sem entender.</p>
+  </header>
+
+  <section class="block">
+    <h2><span class="n">1</span> O que essa trilha NÃO é</h2>
+    <ul class="talk-points">
+      <li>Não é fórmula mágica de "ficar rico com anúncio". É o caminho para <strong>parar de queimar dinheiro</strong> com campanha configurada no achismo.</li>
+      <li>Não exige experiência prévia — cada etapa é explicada do zero, tela a tela.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <h2><span class="n">2</span> Como a trilha está organizada</h2>
+    <ul class="talk-points">
+      <li><strong>Módulo 1 — Configuração:</strong> você vai deixar toda a estrutura técnica pronta (página, Instagram, Business Manager, conta de anúncios e pixel).</li>
+      <li><strong>Módulo 2 — Conceitos:</strong> vocabulário e raciocínio de tráfego pago, para você entender o que está fazendo, não só clicar.</li>
+      <li><strong>Módulo 3 — O Funil:</strong> como pensar a jornada do cliente (topo, meio e fundo) antes de criar qualquer campanha.</li>
+      <li><strong>Módulo 4 — Prática:</strong> você vai montar e publicar sua primeira campanha, aplicando tudo dos módulos anteriores.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <h2><span class="n">3</span> O que você precisa ter em mãos antes de começar</h2>
+    <ul class="talk-points">
+      <li>Uma <strong>página do Facebook</strong> do seu negócio (se ainda não tiver, crie antes de seguir para o Módulo 1).</li>
+      <li>Um <strong>perfil comercial ou de criador no Instagram</strong> do seu negócio.</li>
+      <li>Acesso ao seu <strong>Facebook pessoal</strong> (é a partir dele que você vai administrar tudo).</li>
+    </ul>
+    <div class="callout">
+      <strong>Dica:</strong> se você ainda não tem página no Facebook ou perfil comercial no Instagram, resolva isso antes de avançar — o Módulo 1 já parte do princípio de que essas duas coisas existem.
+    </div>
+  </section>
+
+  <section class="block">
+    <h2><span class="n">4</span> Checklist antes de avançar</h2>
+    <ul class="checklist" id="checklist">
+      <li data-key="ck-0-1"><input type="checkbox"><span>Tenho uma página do Facebook do meu negócio</span></li>
+      <li data-key="ck-0-2"><input type="checkbox"><span>Tenho um perfil comercial/criador no Instagram do meu negócio</span></li>
+      <li data-key="ck-0-3"><input type="checkbox"><span>Sei o e-mail e senha do meu Facebook pessoal</span></li>
+    </ul>
+  </section>
+</div>
+
+<div class="complete-bar">
+  <div class="inner">
+    <a class="btn btn-secondary" href="index.html">Trilha</a>
+    <button class="btn btn-primary" id="completeBtn">Marcar como concluída</button>
+    <a class="btn btn-secondary" href="01-configuracao.html">Próxima →</a>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'trilha-negocio-local-progress';
+  const MODULE_ID = 'boas-vindas';
+  const CHECK_KEY = 'trilha-negocio-local-checks';
+
+  function getDone() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e){ return {}; } }
+  function setDone(obj) { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); }
+  function getChecks() { try { return JSON.parse(localStorage.getItem(CHECK_KEY)) || {}; } catch(e){ return {}; } }
+  function setChecks(obj) { localStorage.setItem(CHECK_KEY, JSON.stringify(obj)); }
+
+  const completeBtn = document.getElementById('completeBtn');
+  function renderBtn() {
+    const done = getDone();
+    if (done[MODULE_ID]) {
+      completeBtn.textContent = '✓ Concluída';
+      completeBtn.classList.add('done');
+    } else {
+      completeBtn.textContent = 'Marcar como concluída';
+      completeBtn.classList.remove('done');
+    }
+  }
+  completeBtn.addEventListener('click', () => {
+    const done = getDone();
+    done[MODULE_ID] = !done[MODULE_ID];
+    setDone(done);
+    renderBtn();
+  });
+  renderBtn();
+
+  const checks = getChecks();
+  document.querySelectorAll('#checklist li').forEach(li => {
+    const key = li.dataset.key;
+    const input = li.querySelector('input');
+    if (checks[key]) { input.checked = true; li.classList.add('checked'); }
+    li.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'INPUT') input.checked = !input.checked;
+      const c = getChecks();
+      c[key] = input.checked;
+      setChecks(c);
+      li.classList.toggle('checked', input.checked);
+    });
+  });
+</script>
+</body>
+</html>

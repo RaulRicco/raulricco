@@ -1,0 +1,13 @@
+/* Referência de estilo compartilhado — cada página de módulo cola isso inline no <style>. Mantido aqui só para consulta/edição rápida, não é importado pelas páginas. */
+
+:root {
+  --bg-primary: #0A0A0A;
+  --bg-card: #1A1A1A;
+  --bg-card-hover: #1F1F1F;
+  --color-green: #00c150;
+  --color-white: #FFFFFF;
+  --color-gray-light: #CCCCCC;
+  --color-gray-medium: #999999;
+  --border-subtle: rgba(255,255,255,0.08);
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}

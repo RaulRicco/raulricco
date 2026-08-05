@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Módulo 2: Conceitos · A Trilha: Negócio Local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0A0A0A;
+    --bg-card: #1A1A1A;
+    --bg-card-hover: #1F1F1F;
+    --color-green: #00c150;
+    --color-white: #FFFFFF;
+    --color-gray-light: #CCCCCC;
+    --color-gray-medium: #999999;
+    --border-subtle: rgba(255,255,255,0.08);
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--color-white);
+    line-height: 1.6;
+    padding-bottom: 6rem;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 1.25rem; }
+
+  nav.topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    z-index: 10;
+  }
+  nav.topbar .inner {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .back-link {
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .back-link:hover { color: var(--color-white); }
+  .duration-pill {
+    background: rgba(0,193,80,0.12);
+    color: var(--color-green);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+  }
+
+  header.hero { padding: 2.5rem 0 1.5rem; }
+  .kicker {
+    color: var(--color-green);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+  }
+  .objective {
+    color: var(--color-gray-light);
+    font-size: 1.05rem;
+    max-width: 60ch;
+  }
+
+  .lesson-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  .lesson-nav a {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+  }
+  .lesson-nav a:hover { border-color: var(--color-green); color: var(--color-white); }
+
+  section.block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    scroll-margin-top: 5rem;
+  }
+  section.block h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  section.block h2 .n {
+    background: var(--color-green);
+    color: var(--bg-primary);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .sub-objective {
+    color: var(--color-gray-medium);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    margin-left: 34px;
+  }
+
+  .talk-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .talk-points li {
+    display: flex;
+    gap: 0.7rem;
+    color: var(--color-gray-light);
+    font-size: 0.98rem;
+  }
+  .talk-points li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-green);
+    margin-top: 0.55rem;
+  }
+  .talk-points strong { color: var(--color-white); }
+
+  .callout {
+    background: rgba(0,193,80,0.08);
+    border-left: 3px solid var(--color-green);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    color: var(--color-gray-light);
+  }
+  .callout strong { color: var(--color-green); }
+
+  .analogy-box {
+    background: linear-gradient(180deg, rgba(0,193,80,0.1), rgba(0,193,80,0.03));
+    border: 1px solid rgba(0,193,80,0.3);
+    border-radius: 12px;
+    padding: 1.25rem 1.4rem;
+    margin-top: 1.25rem;
+  }
+  .analogy-box .analogy-label {
+    color: var(--color-green);
+    font-weight: 800;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .analogy-box p {
+    color: var(--color-gray-light);
+    font-size: 0.95rem;
+    margin-bottom: 0.9rem;
+  }
+  .analogy-box p:last-child { margin-bottom: 0; }
+  .analogy-box strong { color: var(--color-white); }
+  .analogy-box .quote {
+    font-style: italic;
+    color: var(--color-white);
+    border-top: 1px solid rgba(0,193,80,0.25);
+    padding-top: 0.9rem;
+    margin-top: 0.9rem;
+    font-size: 0.95rem;
+  }
+
+  .module-checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .module-checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    font-size: 0.95rem;
+    color: var(--color-gray-light);
+    cursor: pointer;
+    user-select: none;
+  }
+  .module-checklist input {
+    margin-top: 0.2rem;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-green);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .module-checklist li.checked span { color: var(--color-gray-medium); text-decoration: line-through; }
+
+  .complete-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+  }
+  .complete-bar .inner {
+    max-width: 720px;
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.9rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--color-green);
+    color: var(--bg-primary);
+  }
+  .btn-primary.done { background: var(--bg-card-hover); color: var(--color-green); border: 1px solid var(--color-green); }
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--color-gray-light);
+    border: 1px solid var(--border-subtle);
+    flex: 0 0 auto;
+    padding: 0.9rem 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="inner">
+    <a class="back-link" href="index.html">← Trilha completa</a>
+    <span class="duration-pill">Material de apoio</span>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Módulo 2</div>
+    <h1>Conceitos</h1>
+    <p class="objective">Antes de sair criando campanha, você precisa entender o que está fazendo. Este módulo te dá o raciocínio por trás de cada configuração que você vai usar no Módulo 4.</p>
+
+    <nav class="lesson-nav">
+      <a href="#s1">2.1 Tráfego pago</a>
+      <a href="#s2">2.2 Criativos</a>
+      <a href="#s3">2.3 Concorrência</a>
+      <a href="#s4">2.4 Validar criativos</a>
+    </nav>
+  </header>
+
+  <section class="block" id="s1">
+    <h2><span class="n">2.1</span> O que é tráfego pago (de verdade)</h2>
+    <ul class="talk-points">
+      <li><strong>Tráfego pago</strong> não é a mesma coisa que "impulsionar post" — impulsionar é um atalho raso, tráfego pago é uma estrutura com objetivo, público e criativo pensados.</li>
+      <li>O Meta escolhe quem vê seu anúncio através de um <strong>leilão</strong>: não é só quem paga mais, é a combinação de <strong>relevância do anúncio + valor do lance + chance de a pessoa realmente agir</strong>.</li>
+      <li>Se você tem um <strong>negócio local</strong>, isso muda sua estratégia: seu público é limitado por raio geográfico, seu ticket tende a ser menor e o ciclo de decisão do cliente costuma ser mais curto do que em um e-commerce nacional.</li>
+    </ul>
+
+    <div class="analogy-box">
+      <div class="analogy-label">Pensando na prática</div>
+      <p><strong>O funcionário na porta da loja.</strong> Tráfego pago é como contratar alguém para ficar na rua trazendo gente pra dentro da sua loja — só que esse "funcionário" é o Meta, e ele é extremamente seletivo com quem ele aborda.</p>
+      <p><strong>Impulsionar post</strong> = um funcionário desatento que grita "vem pra minha loja" pra qualquer pessoa que passar, sem filtro nenhum.</p>
+      <p><strong>Tráfego pago de verdade</strong> = um funcionário treinado com uma prancheta na mão: "só aborda quem já demonstrou interesse nisso, mora perto, tem esse perfil". Isso é a segmentação.</p>
+      <p><strong>O leilão</strong> = a calçada é concorrida, outros donos de loja também têm funcionários ali. Quem fala com o pedestre não é só quem paga mais — é quem paga bem <strong>+</strong> tem o melhor discurso (criativo relevante) <strong>+</strong> maior chance de a pessoa entrar (ação estimada). Por isso criativo importa mais que orçamento.</p>
+      <div class="quote">"Tráfego pago não é pagar pro Instagram te mostrar. É pagar pra ter um vendedor treinado trabalhando 24h na porta do seu negócio, falando só com quem tem chance real de entrar."</div>
+    </div>
+  </section>
+
+  <section class="block" id="s2">
+    <h2><span class="n">2.2</span> Criativos</h2>
+    <ul class="talk-points">
+      <li>Criativo é <strong>imagem, vídeo, copy e CTA</strong> juntos — o pacote todo, não só a arte visual.</li>
+      <li>Hoje em dia, <strong>o criativo importa mais que a segmentação</strong>. O Meta já é muito bom em achar as pessoas certas; o que decide se ela para de rolar o feed é o que ela vê e lê.</li>
+      <li>Formatos que costumam funcionar bem para negócio local: <strong>antes/depois, bastidor do negócio, prova social (depoimento de cliente) e oferta direta</strong>.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="s3">
+    <h2><span class="n">2.3</span> Como analisar o concorrente</h2>
+    <ul class="talk-points">
+      <li>Use a <strong>Biblioteca de Anúncios do Meta</strong> (facebook.com/ads/library) para ver os anúncios ativos de qualquer página, inclusive concorrentes.</li>
+      <li>Observe: <strong>há quanto tempo o anúncio está rodando</strong> — se está no ar há semanas, é sinal de que está funcionando para quem anuncia. Veja também o tipo de oferta e o CTA usado.</li>
+      <li>Não copie sem entender o porquê. Pergunte-se: <strong>que problema esse anúncio resolve, e por que essa oferta específica funciona para esse público?</strong></li>
+    </ul>
+  </section>
+
+  <section class="block" id="s4">
+    <h2><span class="n">2.4</span> Como validar seus criativos</h2>
+    <ul class="talk-points">
+      <li>Teste de forma simples: <strong>2 a 3 variações por vez</strong>, nunca 10 de uma vez — fica difícil saber o que realmente funcionou.</li>
+      <li>Avalie pelas métricas certas: <strong>CTR (taxa de cliques) e custo por resultado</strong> — não só "curtidas", que não pagam boleto.</li>
+      <li>Regra prática: dê alguns dias e um orçamento mínimo para cada criativo rodar antes de decidir. Se o custo por resultado estiver muito acima da média dos outros, <strong>pause</strong>. Se estiver melhor, <strong>aumente o orçamento aos poucos</strong>.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <h2>Confira seu entendimento</h2>
+    <ul class="module-checklist" id="checklist">
+      <li data-key="ck-2-1"><input type="checkbox"><span>2.1 Entendi a diferença entre tráfego pago e impulsionar, e como funciona o leilão</span></li>
+      <li data-key="ck-2-2"><input type="checkbox"><span>2.2 Sei quais formatos de criativo funcionam bem para negócio local</span></li>
+      <li data-key="ck-2-3"><input type="checkbox"><span>2.3 Sei usar a Biblioteca de Anúncios para analisar concorrentes</span></li>
+      <li data-key="ck-2-4"><input type="checkbox"><span>2.4 Sei como testar e decidir entre pausar ou escalar um criativo</span></li>
+    </ul>
+  </section>
+</div>
+
+<div class="complete-bar">
+  <div class="inner">
+    <a class="btn btn-secondary" href="01-configuracao.html">← Anterior</a>
+    <button class="btn btn-primary" id="completeBtn">Marcar como concluída</button>
+    <a class="btn btn-secondary" href="03-o-funil.html">Próxima →</a>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'trilha-negocio-local-progress';
+  const MODULE_ID = 'modulo-2';
+  const CHECK_KEY = 'trilha-negocio-local-checks';
+
+  function getDone() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e){ return {}; } }
+  function setDone(obj) { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); }
+  function getChecks() { try { return JSON.parse(localStorage.getItem(CHECK_KEY)) || {}; } catch(e){ return {}; } }
+  function setChecks(obj) { localStorage.setItem(CHECK_KEY, JSON.stringify(obj)); }
+
+  const completeBtn = document.getElementById('completeBtn');
+  function renderBtn() {
+    const done = getDone();
+    if (done[MODULE_ID]) {
+      completeBtn.textContent = '✓ Concluída';
+      completeBtn.classList.add('done');
+    } else {
+      completeBtn.textContent = 'Marcar como concluída';
+      completeBtn.classList.remove('done');
+    }
+  }
+  completeBtn.addEventListener('click', () => {
+    const done = getDone();
+    done[MODULE_ID] = !done[MODULE_ID];
+    setDone(done);
+    renderBtn();
+  });
+  renderBtn();
+
+  const checks = getChecks();
+  document.querySelectorAll('#checklist li').forEach(li => {
+    const key = li.dataset.key;
+    const input = li.querySelector('input');
+    if (checks[key]) { input.checked = true; li.classList.add('checked'); }
+    li.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'INPUT') input.checked = !input.checked;
+      const c = getChecks();
+      c[key] = input.checked;
+      setChecks(c);
+      li.classList.toggle('checked', input.checked);
+    });
+  });
+</script>
+</body>
+</html>

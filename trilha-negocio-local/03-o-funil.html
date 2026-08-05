@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Módulo 3: O Funil · A Trilha: Negócio Local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0A0A0A;
+    --bg-card: #1A1A1A;
+    --bg-card-hover: #1F1F1F;
+    --color-green: #00c150;
+    --color-white: #FFFFFF;
+    --color-gray-light: #CCCCCC;
+    --color-gray-medium: #999999;
+    --border-subtle: rgba(255,255,255,0.08);
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--color-white);
+    line-height: 1.6;
+    padding-bottom: 6rem;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 1.25rem; }
+
+  nav.topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    z-index: 10;
+  }
+  nav.topbar .inner {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .back-link {
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .back-link:hover { color: var(--color-white); }
+  .duration-pill {
+    background: rgba(0,193,80,0.12);
+    color: var(--color-green);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+  }
+
+  header.hero { padding: 2.5rem 0 1.5rem; }
+  .kicker {
+    color: var(--color-green);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+  }
+  .objective {
+    color: var(--color-gray-light);
+    font-size: 1.05rem;
+    max-width: 60ch;
+  }
+
+  .lesson-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  .lesson-nav a {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+  }
+  .lesson-nav a:hover { border-color: var(--color-green); color: var(--color-white); }
+
+  .funnel-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 2rem 0 0.5rem;
+  }
+  .funnel-tier {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bg-primary);
+    font-weight: 800;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+  }
+  .funnel-tier.tofu { width: 100%; background: #4DD68C; }
+  .funnel-tier.mofu { width: 72%; background: #00c150; }
+  .funnel-tier.bofu { width: 46%; background: #009940; color: var(--color-white); }
+
+  section.block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    scroll-margin-top: 5rem;
+  }
+  section.block h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  section.block h2 .n {
+    background: var(--color-green);
+    color: var(--bg-primary);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .sub-objective {
+    color: var(--color-gray-medium);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    margin-left: 34px;
+  }
+
+  .talk-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .talk-points li {
+    display: flex;
+    gap: 0.7rem;
+    color: var(--color-gray-light);
+    font-size: 0.98rem;
+  }
+  .talk-points li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-green);
+    margin-top: 0.55rem;
+  }
+  .talk-points strong { color: var(--color-white); }
+
+  .callout {
+    background: rgba(0,193,80,0.08);
+    border-left: 3px solid var(--color-green);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    color: var(--color-gray-light);
+  }
+  .callout strong { color: var(--color-green); }
+
+  .module-checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .module-checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    font-size: 0.95rem;
+    color: var(--color-gray-light);
+    cursor: pointer;
+    user-select: none;
+  }
+  .module-checklist input {
+    margin-top: 0.2rem;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-green);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .module-checklist li.checked span { color: var(--color-gray-medium); text-decoration: line-through; }
+
+  .complete-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+  }
+  .complete-bar .inner {
+    max-width: 720px;
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.9rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--color-green);
+    color: var(--bg-primary);
+  }
+  .btn-primary.done { background: var(--bg-card-hover); color: var(--color-green); border: 1px solid var(--color-green); }
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--color-gray-light);
+    border: 1px solid var(--border-subtle);
+    flex: 0 0 auto;
+    padding: 0.9rem 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="inner">
+    <a class="back-link" href="index.html">← Trilha completa</a>
+    <span class="duration-pill">Material de apoio</span>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Módulo 3</div>
+    <h1>O Funil</h1>
+    <p class="objective">Uma campanha não é "um anúncio solto" — é uma jornada. Entenda topo, meio e fundo antes de montar sua primeira campanha no Módulo 4.</p>
+
+    <div class="funnel-visual">
+      <div class="funnel-tier tofu">TOPO · atrair quem não te conhece</div>
+      <div class="funnel-tier mofu">MEIO · aquecer quem já teve contato</div>
+      <div class="funnel-tier bofu">FUNDO · converter quem já está quente</div>
+    </div>
+
+    <nav class="lesson-nav">
+      <a href="#s1">3.1 Topo</a>
+      <a href="#s2">3.2 Meio</a>
+      <a href="#s3">3.3 Fundo</a>
+    </nav>
+  </header>
+
+  <section class="block" id="s1">
+    <h2><span class="n">3.1</span> Topo de Funil (TOFU)</h2>
+    <ul class="talk-points">
+      <li>É para <strong>atrair quem ainda não conhece seu negócio</strong>.</li>
+      <li>Use objetivos de campanha do Meta como <strong>alcance, tráfego ou engajamento</strong>.</li>
+      <li>O criativo aqui deve ser <strong>institucional, tocar numa dor do público, ou gerar curiosidade</strong> — nada de vender de cara.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="s2">
+    <h2><span class="n">3.2</span> Meio de Funil (MOFU)</h2>
+    <ul class="talk-points">
+      <li>É para <strong>aquecer quem já teve algum contato</strong> com você (visitou seu perfil, viu um vídeo, engajou com um post).</li>
+      <li>Monte públicos de remarketing simples: <strong>quem engajou no seu Instagram ou assistiu a um vídeo seu</strong>.</li>
+      <li>O criativo aqui deve trazer <strong>prova social, depoimento de cliente ou o que te diferencia</strong> da concorrência.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="s3">
+    <h2><span class="n">3.3</span> Fundo de Funil (BOFU)</h2>
+    <ul class="talk-points">
+      <li>É para <strong>converter quem já está quente</strong> — visitou seu site, iniciou uma conversa, adicionou algo ao carrinho.</li>
+      <li>Use objetivo de campanha de <strong>conversão ou mensagens</strong>.</li>
+      <li>O criativo aqui deve ser direto: <strong>oferta clara, senso de urgência, CTA objetivo</strong>.</li>
+    </ul>
+    <div class="callout"><strong>No Módulo 4</strong> você vai aplicar esse funil numa campanha real do seu negócio, combinando topo + remarketing.</div>
+  </section>
+
+  <section class="block">
+    <h2>Confira seu entendimento</h2>
+    <ul class="module-checklist" id="checklist">
+      <li data-key="ck-3-1"><input type="checkbox"><span>3.1 Sei quando usar uma campanha de topo de funil</span></li>
+      <li data-key="ck-3-2"><input type="checkbox"><span>3.2 Sei como montar um público de remarketing simples</span></li>
+      <li data-key="ck-3-3"><input type="checkbox"><span>3.3 Sei quando usar uma campanha de conversão/fundo de funil</span></li>
+    </ul>
+  </section>
+</div>
+
+<div class="complete-bar">
+  <div class="inner">
+    <a class="btn btn-secondary" href="02-conceitos.html">← Anterior</a>
+    <button class="btn btn-primary" id="completeBtn">Marcar como concluída</button>
+    <a class="btn btn-secondary" href="04-pratica.html">Próxima →</a>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'trilha-negocio-local-progress';
+  const MODULE_ID = 'modulo-3';
+  const CHECK_KEY = 'trilha-negocio-local-checks';
+
+  function getDone() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e){ return {}; } }
+  function setDone(obj) { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); }
+  function getChecks() { try { return JSON.parse(localStorage.getItem(CHECK_KEY)) || {}; } catch(e){ return {}; } }
+  function setChecks(obj) { localStorage.setItem(CHECK_KEY, JSON.stringify(obj)); }
+
+  const completeBtn = document.getElementById('completeBtn');
+  function renderBtn() {
+    const done = getDone();
+    if (done[MODULE_ID]) {
+      completeBtn.textContent = '✓ Concluída';
+      completeBtn.classList.add('done');
+    } else {
+      completeBtn.textContent = 'Marcar como concluída';
+      completeBtn.classList.remove('done');
+    }
+  }
+  completeBtn.addEventListener('click', () => {
+    const done = getDone();
+    done[MODULE_ID] = !done[MODULE_ID];
+    setDone(done);
+    renderBtn();
+  });
+  renderBtn();
+
+  const checks = getChecks();
+  document.querySelectorAll('#checklist li').forEach(li => {
+    const key = li.dataset.key;
+    const input = li.querySelector('input');
+    if (checks[key]) { input.checked = true; li.classList.add('checked'); }
+    li.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'INPUT') input.checked = !input.checked;
+      const c = getChecks();
+      c[key] = input.checked;
+      setChecks(c);
+      li.classList.toggle('checked', input.checked);
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Módulo 4: Prática · A Trilha: Negócio Local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0A0A0A;
+    --bg-card: #1A1A1A;
+    --bg-card-hover: #1F1F1F;
+    --color-green: #00c150;
+    --color-white: #FFFFFF;
+    --color-gray-light: #CCCCCC;
+    --color-gray-medium: #999999;
+    --border-subtle: rgba(255,255,255,0.08);
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--color-white);
+    line-height: 1.6;
+    padding-bottom: 6rem;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 1.25rem; }
+
+  nav.topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    z-index: 10;
+  }
+  nav.topbar .inner {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .back-link {
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .back-link:hover { color: var(--color-white); }
+  .duration-pill {
+    background: rgba(0,193,80,0.12);
+    color: var(--color-green);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+  }
+
+  header.hero { padding: 2.5rem 0 1.5rem; }
+  .kicker {
+    color: var(--color-green);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+  }
+  .objective {
+    color: var(--color-gray-light);
+    font-size: 1.05rem;
+    max-width: 60ch;
+  }
+
+  .anchor-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(0,193,80,0.12);
+    color: var(--color-green);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    margin-top: 1rem;
+  }
+
+  .lesson-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  .lesson-nav a {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--color-gray-light);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+  }
+  .lesson-nav a:hover { border-color: var(--color-green); color: var(--color-white); }
+
+  section.block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    scroll-margin-top: 5rem;
+  }
+  section.block h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  section.block h2 .n {
+    background: var(--color-green);
+    color: var(--bg-primary);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .sub-objective {
+    color: var(--color-gray-medium);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    margin-left: 34px;
+  }
+
+  .talk-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .talk-points li {
+    display: flex;
+    gap: 0.7rem;
+    color: var(--color-gray-light);
+    font-size: 0.98rem;
+  }
+  .talk-points li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-green);
+    margin-top: 0.55rem;
+  }
+  .talk-points strong { color: var(--color-white); }
+
+  .callout {
+    background: rgba(0,193,80,0.08);
+    border-left: 3px solid var(--color-green);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    color: var(--color-gray-light);
+  }
+  .callout strong { color: var(--color-green); }
+  .callout.warn {
+    background: rgba(255,159,10,0.08);
+    border-left-color: #ff9f0a;
+  }
+  .callout.warn strong { color: #ff9f0a; }
+
+  .framework-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+  .framework-list li {
+    display: flex;
+    gap: 0.75rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    font-size: 0.92rem;
+    color: var(--color-gray-light);
+  }
+  .framework-list .q-num {
+    color: var(--color-green);
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .framework-list strong { color: var(--color-white); }
+
+  .steps {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 1.1rem 2.6rem;
+    font-size: 0.96rem;
+    color: var(--color-gray-light);
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(0,193,80,0.15);
+    color: var(--color-green);
+    font-weight: 800;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .steps li::after {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 26px;
+    bottom: 0;
+    width: 1px;
+    background: var(--border-subtle);
+  }
+  .steps li:last-child::after { display: none; }
+  .steps li:last-child { padding-bottom: 0; }
+  .steps strong { color: var(--color-white); }
+
+  .module-checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .module-checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    font-size: 0.95rem;
+    color: var(--color-gray-light);
+    cursor: pointer;
+    user-select: none;
+  }
+  .module-checklist input {
+    margin-top: 0.2rem;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-green);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .module-checklist li.checked span { color: var(--color-gray-medium); text-decoration: line-through; }
+
+  .complete-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+  }
+  .complete-bar .inner {
+    max-width: 720px;
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.9rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--color-green);
+    color: var(--bg-primary);
+  }
+  .btn-primary.done { background: var(--bg-card-hover); color: var(--color-green); border: 1px solid var(--color-green); }
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--color-gray-light);
+    border: 1px solid var(--border-subtle);
+    flex: 0 0 auto;
+    padding: 0.9rem 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="inner">
+    <a class="back-link" href="index.html">← Trilha completa</a>
+    <span class="duration-pill">Passo a passo</span>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Módulo 4</div>
+    <h1>Prática</h1>
+    <p class="objective">Chegou a hora de aplicar tudo. Ao final deste módulo, você vai ter sua primeira campanha estruturada publicada e rodando.</p>
+    <span class="anchor-badge">★ O módulo mais importante da trilha</span>
+
+    <nav class="lesson-nav">
+      <a href="#s1">4.1 Estratégia</a>
+      <a href="#s2">4.2 Pensar a campanha</a>
+      <a href="#s3">4.3 Subindo a campanha</a>
+    </nav>
+  </header>
+
+  <section class="block" id="s1">
+    <h2><span class="n">4.1</span> Defina sua estratégia antes de mexer em qualquer botão</h2>
+    <ol class="steps">
+      <li>Pense no seu <strong>raio de atuação real</strong> — a maioria dos negócios locais deve segmentar entre 3 e 10 km ao redor do endereço, dependendo do tipo de serviço.</li>
+      <li>Defina sua <strong>oferta</strong> antes de pensar no anúncio. Pergunte-se: o que exatamente eu quero que a pessoa faça? (agendar, chamar no WhatsApp, visitar a loja)</li>
+      <li>Planeje pelo menos <strong>2 campanhas</strong>: uma de topo de funil (atrair) e uma de remarketing (recuperar quem já teve contato) — revise o Módulo 3 se precisar.</li>
+    </ol>
+    <div class="callout warn"><strong>Erro comum a evitar:</strong> criar o anúncio antes de definir a oferta. Sem oferta clara, o anúncio fica genérico e a pessoa não sabe o que fazer.</div>
+  </section>
+
+  <section class="block" id="s2">
+    <h2><span class="n">4.2</span> Responda estas perguntas antes de abrir o Gerenciador</h2>
+    <p class="sub-objective">Escreva as respostas num papel ou bloco de notas — isso evita retrabalho dentro do Gerenciador.</p>
+    <ul class="framework-list">
+      <li><span class="q-num">1.</span> <strong>Qual objetivo?</strong> (topo, meio ou fundo — Módulo 3)</li>
+      <li><span class="q-num">2.</span> <strong>Qual público?</strong> (raio, idade, interesse ou remarketing)</li>
+      <li><span class="q-num">3.</span> <strong>Qual orçamento diário?</strong></li>
+      <li><span class="q-num">4.</span> <strong>Qual criativo vou usar?</strong> (Módulo 2)</li>
+      <li><span class="q-num">5.</span> <strong>Para onde a pessoa vai?</strong> (site, WhatsApp, formulário)</li>
+    </ul>
+  </section>
+
+  <section class="block" id="s3">
+    <h2><span class="n">4.3</span> Suba sua primeira campanha</h2>
+    <p class="sub-objective">Siga os passos na ordem, dentro do Gerenciador de Anúncios (business.facebook.com/adsmanager).</p>
+    <ol class="steps">
+      <li>Clique em <strong>Criar</strong> e escolha o objetivo que você definiu na etapa 4.2.</li>
+      <li>Dê um nome para a campanha que te ajude a identificar depois (ex: "Topo — Julho — Negócio Local").</li>
+      <li>No <strong>conjunto de anúncios</strong>, defina o público: localização (raio ao redor do seu endereço), idade, e interesses ou o público de remarketing.</li>
+      <li>Escolha os <strong>posicionamentos</strong> — para começar, pode deixar no automático (Vantagem+).</li>
+      <li>Defina o <strong>orçamento diário</strong> que você planejou.</li>
+      <li>No nível de <strong>anúncio</strong>, suba seu criativo (imagem ou vídeo), escreva o texto e escolha o <strong>CTA</strong> (Enviar mensagem, Saiba mais, etc).</li>
+      <li>Configure o <strong>destino do clique</strong>: seu site, WhatsApp ou formulário de cadastro.</li>
+      <li><strong>Revise tudo</strong> uma última vez e clique em <strong>Publicar</strong>.</li>
+      <li>Depois de publicada, acompanhe os resultados direto no <strong>Gerenciador de Anúncios</strong>, na coluna de métricas (alcance, cliques, custo por resultado).</li>
+    </ol>
+  </section>
+
+  <section class="block">
+    <h2>Confira seu progresso</h2>
+    <ul class="module-checklist" id="checklist">
+      <li data-key="ck-4-1"><input type="checkbox"><span>4.1 Defini minha estratégia (raio, oferta, topo + remarketing)</span></li>
+      <li data-key="ck-4-2"><input type="checkbox"><span>4.2 Respondi as 5 perguntas antes de abrir o Gerenciador</span></li>
+      <li data-key="ck-4-3"><input type="checkbox"><span>4.3 Publiquei minha primeira campanha</span></li>
+    </ul>
+  </section>
+</div>
+
+<div class="complete-bar">
+  <div class="inner">
+    <a class="btn btn-secondary" href="03-o-funil.html">← Anterior</a>
+    <button class="btn btn-primary" id="completeBtn">Marcar como concluída</button>
+    <a class="btn btn-secondary" href="index.html">Trilha ✓</a>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'trilha-negocio-local-progress';
+  const MODULE_ID = 'modulo-4';
+  const CHECK_KEY = 'trilha-negocio-local-checks';
+
+  function getDone() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e){ return {}; } }
+  function setDone(obj) { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); }
+  function getChecks() { try { return JSON.parse(localStorage.getItem(CHECK_KEY)) || {}; } catch(e){ return {}; } }
+  function setChecks(obj) { localStorage.setItem(CHECK_KEY, JSON.stringify(obj)); }
+
+  const completeBtn = document.getElementById('completeBtn');
+  function renderBtn() {
+    const done = getDone();
+    if (done[MODULE_ID]) {
+      completeBtn.textContent = '✓ Concluída';
+      completeBtn.classList.add('done');
+    } else {
+      completeBtn.textContent = 'Marcar como concluída';
+      completeBtn.classList.remove('done');
+    }
+  }
+  completeBtn.addEventListener('click', () => {
+    const done = getDone();
+    done[MODULE_ID] = !done[MODULE_ID];
+    setDone(done);
+    renderBtn();
+  });
+  renderBtn();
+
+  const checks = getChecks();
+  document.querySelectorAll('#checklist li').forEach(li => {
+    const key = li.dataset.key;
+    const input = li.querySelector('input');
+    if (checks[key]) { input.checked = true; li.classList.add('checked'); }
+    li.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'INPUT') input.checked = !input.checked;
+      const c = getChecks();
+      c[key] = input.checked;
+      setChecks(c);
+      li.classList.toggle('checked', input.checked);
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Trilha: Negócio Local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0A0A0A;
+    --bg-card: #1A1A1A;
+    --bg-card-hover: #1F1F1F;
+    --color-green: #00c150;
+    --color-white: #FFFFFF;
+    --color-gray-light: #CCCCCC;
+    --color-gray-medium: #999999;
+    --border-subtle: rgba(255,255,255,0.08);
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--color-white);
+    line-height: 1.6;
+    padding: 2.5rem 1.25rem 5rem;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  .kicker {
+    color: var(--color-green);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(2rem, 6vw, 2.75rem);
+    font-weight: 800;
+    margin-bottom: 0.75rem;
+    line-height: 1.15;
+  }
+  .subtitle {
+    color: var(--color-gray-light);
+    font-size: 1.05rem;
+    margin-bottom: 2.5rem;
+    max-width: 55ch;
+  }
+
+  .progress-bar {
+    background: var(--bg-card);
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-subtle);
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--color-green);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .progress-label {
+    color: var(--color-gray-medium);
+    font-size: 0.85rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .module-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .module-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+  .module-card:hover {
+    background: var(--bg-card-hover);
+    border-color: rgba(0,193,80,0.4);
+    transform: translateY(-1px);
+  }
+  .module-num {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: rgba(0,193,80,0.12);
+    color: var(--color-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+  }
+  .module-body { flex: 1; min-width: 0; }
+  .module-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 0.2rem;
+  }
+  .module-meta {
+    color: var(--color-gray-medium);
+    font-size: 0.85rem;
+  }
+  .module-check {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: transparent;
+  }
+  .module-card.done .module-check {
+    background: var(--color-green);
+    border-color: var(--color-green);
+    color: var(--bg-primary);
+  }
+  .module-card.done .module-check::after { content: "✓"; }
+
+  footer {
+    margin-top: 3rem;
+    text-align: center;
+    color: var(--color-gray-medium);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">Guia do aluno</div>
+  <h1>A Trilha: Negócio Local</h1>
+  <p class="subtitle">Passo a passo para você configurar e rodar seus próprios anúncios no Meta Ads. Siga a ordem dos módulos e vá marcando o que já concluiu.</p>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <p class="progress-label" id="progressLabel">0 de 5 módulos concluídos</p>
+
+  <ul class="module-list" id="moduleList">
+    <li>
+      <a class="module-card" data-id="boas-vindas" href="00-boas-vindas.html">
+        <div class="module-num">0</div>
+        <div class="module-body">
+          <div class="module-title">Boas-vindas</div>
+          <div class="module-meta">Antes de começar · pré-requisitos</div>
+        </div>
+        <div class="module-check"></div>
+      </a>
+    </li>
+    <li>
+      <a class="module-card" data-id="modulo-1" href="01-configuracao.html">
+        <div class="module-num">1</div>
+        <div class="module-body">
+          <div class="module-title">Configuração</div>
+          <div class="module-meta">Passo a passo · BM, conta de anúncios, pixel</div>
+        </div>
+        <div class="module-check"></div>
+      </a>
+    </li>
+    <li>
+      <a class="module-card" data-id="modulo-2" href="02-conceitos.html">
+        <div class="module-num">2</div>
+        <div class="module-body">
+          <div class="module-title">Conceitos</div>
+          <div class="module-meta">Material de apoio · tráfego, criativos, concorrência</div>
+        </div>
+        <div class="module-check"></div>
+      </a>
+    </li>
+    <li>
+      <a class="module-card" data-id="modulo-3" href="03-o-funil.html">
+        <div class="module-num">3</div>
+        <div class="module-body">
+          <div class="module-title">O Funil</div>
+          <div class="module-meta">Material de apoio · topo, meio e fundo</div>
+        </div>
+        <div class="module-check"></div>
+      </a>
+    </li>
+    <li>
+      <a class="module-card" data-id="modulo-4" href="04-pratica.html">
+        <div class="module-num">4</div>
+        <div class="module-body">
+          <div class="module-title">Prática</div>
+          <div class="module-meta">Passo a passo · sua primeira campanha</div>
+        </div>
+        <div class="module-check"></div>
+      </a>
+    </li>
+  </ul>
+
+  <footer>Seu progresso é salvo automaticamente neste navegador.</footer>
+</div>
+
+<script>
+  const STORAGE_KEY = 'trilha-negocio-local-progress';
+  const cards = document.querySelectorAll('.module-card');
+  const total = cards.length;
+
+  function getDone() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+
+  function render() {
+    const done = getDone();
+    let count = 0;
+    cards.forEach(card => {
+      const id = card.dataset.id;
+      if (done[id]) { card.classList.add('done'); count++; }
+      else { card.classList.remove('done'); }
+    });
+    document.getElementById('progressFill').style.width = (count / total * 100) + '%';
+    document.getElementById('progressLabel').textContent = count + ' de ' + total + ' módulos concluídos';
+  }
+
+  render();
+  window.addEventListener('pageshow', render);
+</script>
+</body>
+</html>
