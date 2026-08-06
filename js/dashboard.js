@@ -20,7 +20,19 @@ document.addEventListener('DOMContentLoaded', function () {
   const recentLeadsBody = document.getElementById('recentLeadsBody');
   const emptyState = document.getElementById('emptyState');
 
+  const leadsPrev = document.getElementById('leadsPrev');
+  const leadsNext = document.getElementById('leadsNext');
+  const leadsPagerLabel = document.getElementById('leadsPagerLabel');
+  const chartPrev = document.getElementById('chartPrev');
+  const chartNext = document.getElementById('chartNext');
+  const chartPagerLabel = document.getElementById('chartPagerLabel');
+
+  const PAGE_SIZE = 10;
   let currentPeriod = '7d';
+  let allLeads = [];
+  let allSeries = [];
+  let leadsPage = 0;
+  let chartPage = 0;
 
   const STATUS_LABELS = {
     novo: 'Novo',
@@ -85,13 +97,24 @@ document.addEventListener('DOMContentLoaded', function () {
     return div.innerHTML;
   }
 
-  function renderChart(series) {
-    if (!series.length) {
+  function renderChart() {
+    if (!allSeries.length) {
       chartBars.innerHTML = '<div class="chart-empty">Sem dados no período selecionado.</div>';
+      chartPagerLabel.textContent = '';
+      chartPrev.disabled = true;
+      chartNext.disabled = true;
       return;
     }
-    const max = Math.max(...series.map((s) => s.count), 1);
-    chartBars.innerHTML = series
+
+    const totalPages = Math.max(Math.ceil(allSeries.length / PAGE_SIZE), 1);
+    chartPage = Math.min(chartPage, totalPages - 1);
+    // Página 0 = dias mais recentes; navegar para frente volta no tempo.
+    const descending = [...allSeries].reverse();
+    const start = chartPage * PAGE_SIZE;
+    const pageSeries = descending.slice(start, start + PAGE_SIZE).reverse();
+
+    const max = Math.max(...pageSeries.map((s) => s.count), 1);
+    chartBars.innerHTML = pageSeries
       .map((point) => {
         const heightPct = Math.max((point.count / max) * 100, 3);
         return `
@@ -102,6 +125,10 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
       })
       .join('');
+
+    chartPagerLabel.textContent = `${chartPage + 1}/${totalPages}`;
+    chartPrev.disabled = chartPage === 0;
+    chartNext.disabled = chartPage >= totalPages - 1;
   }
 
   function renderSources(sources) {
@@ -127,9 +154,15 @@ document.addEventListener('DOMContentLoaded', function () {
       .join('');
   }
 
-  function renderRecentLeads(leads) {
-    emptyState.hidden = leads.length > 0;
-    recentLeadsBody.innerHTML = leads
+  function renderRecentLeads() {
+    emptyState.hidden = allLeads.length > 0;
+
+    const totalPages = Math.max(Math.ceil(allLeads.length / PAGE_SIZE), 1);
+    leadsPage = Math.min(leadsPage, totalPages - 1);
+    const start = leadsPage * PAGE_SIZE;
+    const pageLeads = allLeads.slice(start, start + PAGE_SIZE);
+
+    recentLeadsBody.innerHTML = pageLeads
       .map(
         (lead) => `
           <tr>
@@ -143,6 +176,10 @@ document.addEventListener('DOMContentLoaded', function () {
         `
       )
       .join('');
+
+    leadsPagerLabel.textContent = allLeads.length ? `${leadsPage + 1}/${totalPages}` : '';
+    leadsPrev.disabled = leadsPage === 0;
+    leadsNext.disabled = leadsPage >= totalPages - 1;
   }
 
   async function loadDashboard(range) {
@@ -167,10 +204,36 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('totalFechado').textContent = formatCurrency(data.totals.totalFechado);
     document.getElementById('taxaConversao').textContent = `${data.totals.taxaConversao}%`;
 
-    renderChart(data.series);
+    allSeries = data.series;
+    allLeads = data.recentLeads;
+    chartPage = 0;
+    leadsPage = 0;
+
+    renderChart();
     renderSources(data.sources);
-    renderRecentLeads(data.recentLeads);
+    renderRecentLeads();
   }
+
+  chartPrev.addEventListener('click', function () {
+    if (chartPage > 0) {
+      chartPage -= 1;
+      renderChart();
+    }
+  });
+  chartNext.addEventListener('click', function () {
+    chartPage += 1;
+    renderChart();
+  });
+  leadsPrev.addEventListener('click', function () {
+    if (leadsPage > 0) {
+      leadsPage -= 1;
+      renderRecentLeads();
+    }
+  });
+  leadsNext.addEventListener('click', function () {
+    leadsPage += 1;
+    renderRecentLeads();
+  });
 
   function refresh() {
     if (currentPeriod === 'custom') {

@@ -57,7 +57,7 @@ export async function onRequestGet({ request, env }) {
       percent: totalLeads > 0 ? Math.round((count / totalLeads) * 1000) / 10 : 0,
     }));
 
-  const recentLeads = leads.slice(0, 20).map((lead) => ({
+  const recentLeads = leads.map((lead) => ({
     id: lead.id,
     nome: lead.nome,
     segmento: lead.segmento,
