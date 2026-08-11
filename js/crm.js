@@ -446,7 +446,19 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       }
       if (typeof fbq !== 'undefined') {
-        fbq('track', 'Schedule', {});
+        fbq('track', 'Schedule', {
+          content_name: lead ? lead.nome : 'Reunião Agendada',
+          content_type: 'meeting',
+          content_id: leadId,
+          currency: 'BRL',
+        });
+        fbq('trackCustom', 'Reunião Agendada', {
+          lead_id: leadId,
+          nome: lead ? lead.nome : undefined,
+          segmento: lead ? lead.segmento : undefined,
+          utm_source: lead ? lead.utm_source : undefined,
+          utm_campaign: lead ? lead.utm_campaign : undefined,
+        });
       }
     }
 
