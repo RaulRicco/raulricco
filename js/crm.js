@@ -428,6 +428,28 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    if (newStatus === 'reuniao_agendada') {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'reuniao_agendada',
+        lead_id: leadId,
+        nome: lead ? lead.nome : undefined,
+        segmento: lead ? lead.segmento : undefined,
+        utm_source: lead ? lead.utm_source : undefined,
+        utm_campaign: lead ? lead.utm_campaign : undefined,
+        gclid: lead ? lead.gclid : undefined,
+        fbclid: lead ? lead.fbclid : undefined,
+      });
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'schedule_meeting', {
+          transaction_id: leadId,
+        });
+      }
+      if (typeof fbq !== 'undefined') {
+        fbq('track', 'Schedule', {});
+      }
+    }
+
     if (newStatus === 'fechado') {
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
