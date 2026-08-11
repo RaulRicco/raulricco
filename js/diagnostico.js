@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault();
 
     const emailInput = document.getElementById('q-email');
-    const errorEl = getStepEl(8).querySelector('.quiz-error');
+    const errorEl = getStepEl(14).querySelector('.quiz-error');
     if (!emailInput.value.trim() || !emailInput.checkValidity()) {
       errorEl?.classList.add('visible');
       emailInput.focus();
