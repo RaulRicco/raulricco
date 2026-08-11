@@ -34,6 +34,12 @@
   src="https://www.facebook.com/tr?id=420378614399742&ev=PageView&noscript=1"
   /></noscript>
   <!-- End Meta Pixel -->
+
+  <!-- OpenAI Ads Pixel -->
+  <script>
+  !function(w,d,s,u){if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;var j=d.createElement(s);j.async=1;j.src=u;var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(j,f)}(window,document,"script","https://bzrcdn.openai.com/sdk/oaiq.min.js");oaiq("init",{pixelId:"GUip5UYJhtPyLG156ZHg8C"});
+  </script>
+  <!-- End OpenAI Ads Pixel -->
 </head>
 <body>
   <!-- Google Tag Manager (noscript) -->
@@ -292,12 +298,10 @@
         <div class="quiz-step" data-step="7">
           <h3>Quanto seu negócio fatura por mês hoje, em média?</h3>
           <div class="quiz-options" data-field="faturamento_mensal_atual">
-            <button type="button" class="quiz-option">Até R$ 5 mil/mês</button>
-            <button type="button" class="quiz-option">R$ 5 mil a R$ 10 mil/mês</button>
-            <button type="button" class="quiz-option">R$ 10 mil a R$ 30 mil/mês</button>
-            <button type="button" class="quiz-option">R$ 30 mil a R$ 60 mil/mês</button>
-            <button type="button" class="quiz-option">R$ 60 mil a R$ 100 mil/mês</button>
-            <button type="button" class="quiz-option">Acima de R$ 100 mil/mês</button>
+            <button type="button" class="quiz-option">Até R$ 100 mil/mês</button>
+            <button type="button" class="quiz-option">R$ 100 mil a R$ 400 mil/mês</button>
+            <button type="button" class="quiz-option">R$ 400 mil a R$ 800 mil/mês</button>
+            <button type="button" class="quiz-option">Acima de R$ 800 mil/mês</button>
           </div>
           <div class="quiz-nav">
             <button type="button" class="btn btn-outline btn-back" data-back>Voltar</button>
@@ -323,6 +327,23 @@
         </div>
 
         <div class="quiz-step" data-step="9">
+          <h3>Qual a maior dificuldade que você tem hoje para fazer seu negócio crescer?</h3>
+          <div class="quiz-options" data-field="maior_dificuldade_crescimento">
+            <button type="button" class="quiz-option">Falta de clientes / movimento baixo</button>
+            <button type="button" class="quiz-option">Não sei como atrair clientes (marketing/publicidade)</button>
+            <button type="button" class="quiz-option">Tentei anunciar mas não deu certo / gastei errado</button>
+            <button type="button" class="quiz-option">Não tenho orçamento / verba apertada</button>
+            <button type="button" class="quiz-option">Concorrência forte / mercado saturado</button>
+            <button type="button" class="quiz-option">Não tenho tempo / estou sozinho no negócio</button>
+            <button type="button" class="quiz-option">Outro</button>
+          </div>
+          <div class="quiz-nav">
+            <button type="button" class="btn btn-outline btn-back" data-back>Voltar</button>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="quiz-step" data-step="10">
           <h3>Qual o @ do seu Instagram?</h3>
           <div class="quiz-field">
             <label for="q-instagram">@seunegocio</label>
@@ -334,7 +355,7 @@
           </div>
         </div>
 
-        <div class="quiz-step" data-step="10">
+        <div class="quiz-step" data-step="11">
           <h3>Quantos habitantes tem a sua cidade, mais ou menos?</h3>
           <div class="quiz-options" data-field="populacao_cidade">
             <button type="button" class="quiz-option">Até 50 mil habitantes</button>
@@ -348,7 +369,7 @@
           </div>
         </div>
 
-        <div class="quiz-step" data-step="11">
+        <div class="quiz-step" data-step="12">
           <h3>Qual o seu nome?</h3>
           <div class="quiz-field">
             <label for="q-nome">Nome completo</label>
@@ -361,7 +382,7 @@
           </div>
         </div>
 
-        <div class="quiz-step" data-step="12">
+        <div class="quiz-step" data-step="14">
           <h3>Qual seu telefone/WhatsApp?</h3>
           <div class="quiz-field">
             <label for="q-telefone">(XX) XXXXX-XXXX</label>
@@ -374,7 +395,7 @@
           </div>
         </div>
 
-        <div class="quiz-step" data-step="13">
+        <div class="quiz-step" data-step="15">
           <h3>Qual seu melhor e-mail?</h3>
           <div class="quiz-field">
             <label for="q-email">Coloque o melhor e-mail, pois enviaremos seu diagnóstico por lá</label>
