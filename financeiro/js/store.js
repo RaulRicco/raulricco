@@ -16,6 +16,10 @@ const addMonths = (s, n) => {
 };
 const addYm = (s, n) => addMonths(s + '-01', n).slice(0, 7);
 const round2 = (n) => Math.round(n * 100) / 100;
+const addDays = (s, n) => { const [y, m, d] = s.split('-').map(Number); return ymd(new Date(y, m - 1, d + n)); };
+const daysBetween = (a, b) => Math.round((parseD(b) - parseD(a)) / 864e5);
+const lastDayOf = (month) => addDays(addYm(month, 1) + '-01', -1);
+const WEEKDAYS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 const monthsBetween = (a, b) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7));
 
 function emptyState() {
@@ -164,23 +168,34 @@ const Store = {
     const { type, desc, amount, accountId, cardId, toAccountId, categoryId, costCenterId, contactId, notes } = r;
     return { type, desc, amount, accountId, cardId, toAccountId, categoryId, costCenterId, contactId, notes };
   },
-  recTxId(r, month) { return `r_${r.id}_${month}`; },
+  recTxId(r, key) { return `r_${r.id}_${key}`; },
   recDate(r, month) { return addMonths(r.startDate, monthsBetween(ym(r.startDate), month)); },
+  isWeekly(r) { return r.freq === 'weekly'; },
+  /** Chave da ocorrência (campo `recMonth` do lançamento): 'YYYY-MM' no mensal, 'W00012' (nº da semana) no semanal. */
+  firstKey(r) { return this.isWeekly(r) ? 'W00000' : ym(r.startDate); },
+  nextKey(r, key) { return this.isWeekly(r) ? 'W' + String(Number(key.slice(1)) + 1).padStart(5, '0') : addYm(key, 1); },
+  occDate(r, key) { return this.isWeekly(r) ? addDays(r.startDate, 7 * Number(key.slice(1))) : this.recDate(r, key); },
+  /** Último dia em que a recorrência gera lançamentos (null = para sempre). */
+  recEnd(r) { return r.endDate || (r.endYm ? lastDayOf(r.endYm) : null); },
 
-  /** Gera as ocorrências que faltam até `untilYm` (mín. 12 meses à frente). IDs determinísticos evitam duplicatas entre aparelhos. */
+  /** Gera as ocorrências que faltam (mensal: 12 meses à frente; semanal: 3 meses), ou até o mês visualizado. IDs determinísticos evitam duplicatas entre aparelhos. */
   materialize(untilYm) {
     const recs = this.state.recurrences || [];
     if (!recs.length) return 0;
-    let until = addYm(ym(todayStr()), 12);
-    if (untilYm && untilYm > until) until = untilYm;
+    const cur = ym(todayStr());
     const have = new Set(this.state.tx.filter((t) => t.recurrenceId).map((t) => t.recurrenceId + '|' + t.recMonth));
     let created = 0;
     for (const r of recs) {
-      const last = r.endYm && r.endYm < until ? r.endYm : until;
+      let horizon = addYm(cur, this.isWeekly(r) ? 3 : 12);
+      if (untilYm && untilYm > horizon) horizon = untilYm;
+      const end = this.recEnd(r);
+      const limit = end && end < lastDayOf(horizon) ? end : lastDayOf(horizon);
       const skips = new Set(r.skips || []);
-      for (let m = ym(r.startDate); m <= last; m = addYm(m, 1)) {
-        if (have.has(r.id + '|' + m) || skips.has(m)) continue;
-        this.state.tx.push({ ...this.recFields(r), id: this.recTxId(r, m), date: this.recDate(r, m), paid: false, paidDate: null, reconciled: false, recurrenceId: r.id, recMonth: m });
+      for (let key = this.firstKey(r), i = 0; i < 5000; key = this.nextKey(r, key), i++) {
+        const date = this.occDate(r, key);
+        if (date > limit) break;
+        if (have.has(r.id + '|' + key) || skips.has(key)) continue;
+        this.state.tx.push({ ...this.recFields(r), id: this.recTxId(r, key), date, paid: false, paidDate: null, reconciled: false, recurrenceId: r.id, recMonth: key });
         created++;
       }
     }
@@ -188,11 +203,11 @@ const Store = {
     return created;
   },
 
-  /** Encerra a recorrência: mantém até `lastYm` (inclusive) e apaga as ocorrências depois disso. */
-  endRecurrence(r, lastYm, onlyUnpaid = false) {
-    this.state.tx = this.state.tx.filter((t) => !(t.recurrenceId === r.id && t.recMonth > lastYm && (!onlyUnpaid || !t.paid)));
-    if (lastYm < ym(r.startDate)) this.remove('recurrences', r.id, r.desc);
-    else { r.endYm = lastYm; this.log('encerrou', 'recurrences', `${r.desc} (último: ${lastYm})`); this.save(); }
+  /** Encerra a recorrência: mantém até `lastDate` (inclusive) e apaga as ocorrências depois disso. */
+  endRecurrence(r, lastDate, onlyUnpaid = false) {
+    this.state.tx = this.state.tx.filter((t) => !(t.recurrenceId === r.id && this.occDate(r, t.recMonth) > lastDate && (!onlyUnpaid || !t.paid)));
+    if (lastDate < r.startDate) this.remove('recurrences', r.id, r.desc);
+    else { r.endDate = lastDate; r.endYm = null; this.log('encerrou', 'recurrences', `${r.desc} (último: ${lastDate.split('-').reverse().join('/')})`); this.save(); }
   },
 
   /** Apaga a recorrência e suas ocorrências (todas, ou só as não pagas). */
