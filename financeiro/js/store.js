@@ -261,7 +261,7 @@ const Calc = {
   },
 
   /** Lançamentos que contam como receita/despesa (exclui transferências e pagamento de fatura). */
-  isResult(t) { return t.type !== 'transferencia' && !t.cardPayment; },
+  isResult(t) { return t.type !== 'transferencia' && !t.cardPayment && !t.invoiceResidual; },
 
   monthTotals(month) {
     let rec = 0, desp = 0, recPaid = 0, despPaid = 0;

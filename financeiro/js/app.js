@@ -177,7 +177,6 @@ function txForm(t = {}, preset = {}, opts = {}) {
       <div class="field" id="catWrap"><label>Categoria</label><select class="input" name="categoryId" id="catSel">${catOptions(t.type === 'transferencia' ? 'despesa' : t.type, t.categoryId)}</select></div>
       ${field('Centro de custo', `<select class="input" name="costCenterId">${optList(S().costCenters, t.costCenterId, 'Nenhum')}</select>`)}
       ${field('Cliente / fornecedor', `<select class="input" name="contactId">${optList(S().contacts, t.contactId, 'Nenhum')}</select>`)}
-      ${rec ? `<div class="field"><label>Lançamento fixo</label><label class="check" style="margin-top:10px"><input type="checkbox" name="applyFuture" ${opts.applyFuture ? 'checked' : ''}> Aplicar também aos próximos meses</label></div>` : ''}
       ${isNew ? field('Repetição', `<div style="display:flex;gap:8px"><select class="input" name="repeat" id="repSel"><option value="">Não repetir</option><option value="parcelado">Parcelado</option><option value="fixo">Fixo mensal por X meses</option><option value="sempre" ${preset.repeat === 'sempre' ? 'selected' : ''}>Fixo mensal — para sempre</option></select><input class="input" name="times" type="number" min="2" max="120" value="12" style="width:90px" id="repN" hidden></div>`) : '<div></div>'}
       ${field('Observações', `<textarea class="input" name="notes" placeholder="Opcional">${esc(t.notes)}</textarea>`, 'full')}
       <label class="check full" id="paidWrap"><input type="checkbox" name="paid" ${t.paid ? 'checked' : ''}> <span id="paidLabel">Já foi pago</span></label>
@@ -200,13 +199,11 @@ function txForm(t = {}, preset = {}, opts = {}) {
       if (base.type === 'transferencia' && base.toAccountId === base.accountId) { toast('Escolha contas diferentes'); return false; }
       base.paidDate = base.paid ? (t.paidDate && t.paid ? t.paidDate : base.date) : null;
       if (!isNew) {
-        Store.upsert('tx', { ...t, ...base, amount: round2(amount) });
-        if (rec && d.applyFuture) {
-          Object.assign(rec, Store.recFields({ ...base, amount: round2(amount) }), { startDate: rec.startDate.slice(0, 8) + base.date.slice(8) });
-          S().tx.forEach((x) => { if (x.recurrenceId === rec.id && !x.paid && x.recMonth > t.recMonth) Object.assign(x, Store.recFields(rec), { date: Store.recDate(rec, x.recMonth) }); });
-          Store.log('editou', 'recurrences', rec.desc + ' (próximos meses)'); Store.save();
-          toast('Atualizado neste e nos próximos meses');
-        } else toast('Lançamento atualizado');
+        const updated = { ...t, ...base, amount: round2(amount) };
+        const future = futureOf(t);
+        if (!future.length) { Store.upsert('tx', updated); toast('Lançamento atualizado'); return; }
+        // pergunta o escopo depois que este modal fechar
+        setTimeout(() => askEditScope(t, updated, future, opts.applyFuture), 0);
         return;
       }
       if (d.repeat === 'sempre') {
@@ -255,6 +252,44 @@ function txForm(t = {}, preset = {}, opts = {}) {
   sync();
 }
 
+/** Próximos lançamentos da mesma série (fixo ou parcelado) ainda não pagos. */
+function futureOf(t) {
+  if (t.recurrenceId && Store.get('recurrences', t.recurrenceId)) return S().tx.filter((x) => x.recurrenceId === t.recurrenceId && !x.paid && x.recMonth > t.recMonth);
+  if (t.groupId) return S().tx.filter((x) => x.groupId === t.groupId && x.id !== t.id && !x.paid && x.date > t.date);
+  return [];
+}
+
+function askEditScope(t, updated, future, preferNext) {
+  const rec = t.recurrenceId && Store.get('recurrences', t.recurrenceId);
+  const last = future.reduce((m, x) => (x.date > m ? x.date : m), '');
+  modal('Aplicar alteração aos próximos meses?', `
+    <p style="margin:0 0 14px">Você alterou <b>${esc(updated.desc)}</b>, que ${rec ? 'é um lançamento fixo' : 'faz parte de uma série'}. Onde a alteração deve valer?</p>
+    <div style="display:grid;gap:10px">
+      <label class="check"><input type="radio" name="scope" value="one" ${preferNext ? '' : 'checked'}> Somente neste lançamento (${fdate(t.date)})</label>
+      <label class="check"><input type="radio" name="scope" value="next" ${preferNext ? 'checked' : ''}> Neste e nos próximos meses — ${rec ? 'inclusive os que ainda serão gerados' : `mais ${future.length} lançamento${future.length === 1 ? '' : 's'}, até ${fdate(last)}`}</label>
+    </div>
+    <p class="muted" style="margin:14px 0 0;font-size:12px">Lançamentos já pagos não são alterados.</p>`, {
+    saveLabel: 'Aplicar', onSave: () => {
+      const next = $('#mform input[name=scope]:checked').value === 'next';
+      Store.upsert('tx', updated);
+      if (next) {
+        const fields = Store.recFields(updated);
+        if (rec) {
+          Object.assign(rec, fields, { startDate: rec.startDate.slice(0, 8) + updated.date.slice(8) });
+          future.forEach((x) => Object.assign(x, Store.recFields(rec), { date: Store.recDate(rec, x.recMonth) }));
+        } else {
+          const SUF = /\s*\(\d+\/\d+\)$/;
+          const baseDesc = updated.desc.replace(SUF, '');
+          // mantém o espaçamento entre as parcelas e o sufixo (2/10) de cada uma
+          future.forEach((x) => Object.assign(x, fields, { desc: baseDesc + ((x.desc.match(SUF) || [''])[0]), date: addMonths(updated.date, monthsBetween(ym(t.date), ym(x.date))) }));
+        }
+        Store.log('editou', rec ? 'recurrences' : 'tx', `${updated.desc} (este e próximos)`); Store.save();
+        toast('Alteração aplicada aos próximos meses');
+      } else toast('Lançamento atualizado');
+    },
+  });
+}
+
 function deleteTx(t) {
   const rec = t.recurrenceId && Store.get('recurrences', t.recurrenceId);
   if (rec) {
@@ -290,14 +325,31 @@ function payItem(item) {
   const t = item.tx;
   const accSel = isInv ? Store.get('cards', item.invoice.cardId)?.accountId : t.accountId;
   modal(item.kind === 'receber' ? 'Confirmar recebimento' : 'Confirmar pagamento', `
-    <p style="margin:0 0 16px"><b>${esc(item.desc)}</b><br><span class="muted">Vencimento ${fdate(item.date)}</span></p>
+    <p style="margin:0 0 16px"><b>${esc(item.desc)}</b><br><span class="muted">Vencimento ${fdate(item.date)} · valor ${money(item.amount)}</span></p>
+    <p class="muted" style="margin:-6px 0 14px;font-size:12px">Para pagar só uma parte, informe um valor menor e escolha quando vence o restante.</p>
     <div class="form-grid">
-      ${field('Valor pago (R$)', `<input class="input" name="amount" value="${String(item.amount).replace('.', ',')}">`)}
+      ${field(item.kind === 'receber' ? 'Valor recebido (R$)' : 'Valor pago (R$)', `<input class="input" name="amount" inputmode="decimal" value="${String(item.amount).replace('.', ',')}">`)}
       ${field('Data do pagamento', `<input class="input" type="date" name="paidDate" value="${todayStr()}">`)}
       ${field('Conta', `<select class="input" name="accountId">${optList(S().accounts, accSel)}</select>`, 'full')}
+    </div>
+    <div id="partial" class="partial" hidden>
+      <div><b>Pagamento parcial</b><br><span class="muted">Restante: <b id="restVal"></b> — será lançado como ${item.kind === 'receber' ? 'a receber' : 'a pagar'}.</span></div>
+      ${field('Vencimento do restante', `<input class="input" type="date" name="restDate" value="${addMonths(item.date > todayStr() ? item.date : todayStr(), 1)}">`)}
     </div>`, {
     saveLabel: 'Confirmar', onSave: (d) => {
       const amount = round2(num(d.amount));
+      if (!(amount > 0)) { toast('Informe o valor pago'); return false; }
+      const rest = round2(item.amount - amount);
+      if (rest > 0 && !d.restDate) { toast('Informe o vencimento do restante'); return false; }
+      if (rest > 0) {
+        if (isInv) {
+          const card = Store.get('cards', item.invoice.cardId);
+          Store.upsert('tx', { id: uid(), type: 'despesa', desc: `Restante fatura ${card.name} (${monthName(item.invoice.month)})`, amount: rest, date: d.restDate, accountId: d.accountId, categoryId: null, costCenterId: null, contactId: null, paid: false, paidDate: null, reconciled: false, invoiceResidual: true, notes: `Pagamento parcial da fatura: ${money(amount)} pago em ${fdate(d.paidDate)}` });
+        } else {
+          const { id, recurrenceId, recMonth, groupId, paid, paidDate, reconciled, ...copy } = t;
+          Store.upsert('tx', { ...copy, id: uid(), desc: `${t.desc.replace(/ \(restante\)$/, '')} (restante)`, amount: rest, date: d.restDate, accountId: d.accountId, paid: false, paidDate: null, reconciled: false, parentTxId: t.id, notes: `Restante do pagamento parcial de ${fdate(d.paidDate)} (${money(amount)} de ${money(item.amount)})` });
+        }
+      }
       if (isInv) {
         const card = Store.get('cards', item.invoice.cardId);
         const ex = Calc.invoicePayment(card.id, item.invoice.month);
@@ -305,9 +357,15 @@ function payItem(item) {
       } else {
         Store.upsert('tx', { ...t, amount, paid: true, paidDate: d.paidDate, accountId: d.accountId });
       }
-      toast('Baixa registrada');
+      toast(rest > 0 ? `Pago ${money(amount)} — restante de ${money(rest)} para ${fdate(d.restDate)}` : 'Baixa registrada');
     },
   });
+  const upd = () => {
+    const rest = round2(item.amount - num($('#mform [name=amount]').value));
+    $('#partial').hidden = !(rest > 0);
+    $('#restVal').textContent = money(rest);
+  };
+  $('#mform [name=amount]').addEventListener('input', upd);
 }
 
 function togglePaid(t) {
