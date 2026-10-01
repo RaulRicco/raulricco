@@ -1,5 +1,6 @@
-/* Ricco Orçamento — camada de dados (localStorage) */
+/* Ricco Orçamento — camada de dados (Cloudflare D1 via /api/fin, com cache local) */
 const KEY = 'financakit:v1';
+const COLLS = ['accounts', 'cards', 'categories', 'costCenters', 'contacts', 'tx', 'budgets', 'goals', 'assets', 'investments', 'audit'];
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const pad = (n) => String(n).padStart(2, '0');
@@ -25,20 +26,106 @@ function emptyState() {
   };
 }
 
+class AuthError extends Error {}
+
+async function api(path, body) {
+  const res = await fetch('/api/' + path, {
+    method: body ? 'POST' : 'GET',
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined,
+    credentials: 'same-origin',
+  });
+  if (res.status === 401) throw new AuthError('Não autorizado');
+  if (!res.ok) throw new Error('Erro ' + res.status);
+  return res.json();
+}
+
+/** Converte o estado em registros {coll,id,data} — um por linha no banco. */
+function toRecords(state) {
+  const out = [{ coll: 'settings', id: 'main', data: state.settings || {} }];
+  for (const c of COLLS) for (const o of state[c] || []) { if (!o.id) o.id = uid(); out.push({ coll: c, id: o.id, data: o }); }
+  return out;
+}
+function fromRecords(records) {
+  const s = emptyState();
+  for (const r of records) {
+    if (r.coll === 'settings') s.settings = { ...s.settings, ...r.data };
+    else if (s[r.coll]) s[r.coll].push(r.data);
+  }
+  s.audit.sort((a, b) => b.ts.localeCompare(a.ts));
+  return s;
+}
+const recKey = (r) => r.coll + '|' + r.id;
+
 const Store = {
   state: null,
+  synced: new Map(), // chave -> JSON do que o servidor já tem
+  needReplace: false,
+  status: 'ok', // ok | saving | error
+  onStatus: () => {},
+  timer: null,
 
-  load() {
-    try {
-      const raw = localStorage.getItem(KEY);
-      this.state = raw ? Object.assign(emptyState(), JSON.parse(raw)) : null;
-    } catch (e) { this.state = null; }
-    if (!this.state) { this.state = seed(); this.save(); }
+  /** Carrega do servidor. Lança AuthError se não houver sessão. */
+  async init() {
+    const { records } = await api('fin/state');
+    this.state = fromRecords(records);
+    this.synced = new Map(toRecords(this.state).map((r) => [recKey(r), JSON.stringify(r.data)]));
+    this.cache();
+    return records.length > 0;
   },
+
+  localBackup() {
+    try { const raw = localStorage.getItem(KEY); return raw ? Object.assign(emptyState(), JSON.parse(raw)) : null; } catch (e) { return null; }
+  },
+
+  cache() { try { localStorage.setItem(KEY, JSON.stringify(this.state)); } catch (e) {} },
 
   save() {
-    try { localStorage.setItem(KEY, JSON.stringify(this.state)); } catch (e) { console.warn('Falha ao salvar', e); }
+    this.cache();
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.flush(), 400);
   },
+
+  pending() { return this.needReplace || this.diff().total > 0; },
+
+  diff() {
+    const cur = new Map(toRecords(this.state).map((r) => [recKey(r), r]));
+    const upserts = [], deletes = [];
+    for (const [k, r] of cur) { const j = JSON.stringify(r.data); if (this.synced.get(k) !== j) upserts.push(r); }
+    for (const k of this.synced.keys()) if (!cur.has(k)) { const [coll, id] = k.split('|'); deletes.push({ coll, id }); }
+    return { upserts, deletes, total: upserts.length + deletes.length };
+  },
+
+  async flush() {
+    if (this.flushing) { this.again = true; return; }
+    this.flushing = true;
+    try {
+      const replace = this.needReplace;
+      const d = replace ? null : this.diff();
+      if (replace || d.total) {
+        this.setStatus('saving');
+        const snapshot = toRecords(this.state);
+        if (replace) { await api('fin/replace', { records: snapshot }); this.needReplace = false; }
+        else await api('fin/sync', { upserts: d.upserts, deletes: d.deletes });
+        // marca como sincronizado exatamente o que foi enviado
+        if (replace) this.synced = new Map(snapshot.map((r) => [recKey(r), JSON.stringify(r.data)]));
+        else {
+          d.upserts.forEach((r) => this.synced.set(recKey(r), JSON.stringify(r.data)));
+          d.deletes.forEach((r) => this.synced.delete(recKey(r)));
+        }
+      }
+      this.setStatus('ok');
+    } catch (e) {
+      this.setStatus(e instanceof AuthError ? 'auth' : 'error');
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => this.flush(), 10000);
+    } finally {
+      this.flushing = false;
+      if (this.again) { this.again = false; this.flush(); }
+    }
+  },
+
+  setStatus(s) { this.status = s; this.onStatus(s); },
 
   log(action, entity, desc) {
     this.state.audit.unshift({ id: uid(), ts: new Date().toISOString(), action, entity, desc });
@@ -61,9 +148,10 @@ const Store = {
     this.save();
   },
 
-  replaceAll(next) {
+  replaceAll(next, label = 'Restauração de backup') {
     this.state = Object.assign(emptyState(), next);
-    this.log('importou', 'backup', 'Restauração de backup');
+    this.log('importou', 'backup', label);
+    this.needReplace = true;
     this.save();
   },
 
@@ -203,6 +291,16 @@ function monthName(m, long) {
   const [y, mo] = m.split('-').map(Number);
   const s = new Date(y, mo - 1, 1).toLocaleDateString('pt-BR', { month: long ? 'long' : 'short', year: 'numeric' });
   return s.replace('.', '').replace(' de ', ' ');
+}
+
+/** Estado inicial limpo: categorias padrão e uma conta. */
+function blankState(settings) {
+  const s = emptyState();
+  if (settings) s.settings = settings;
+  s.categories = seed().categories;
+  s.accounts.push({ id: uid(), name: 'Conta principal', type: 'corrente', initial: 0, color: '#7267ef' });
+  s.costCenters.push({ id: uid(), name: 'Pessoal' });
+  return s;
 }
 
 /* ---------- Dados de exemplo ---------- */

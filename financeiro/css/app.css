@@ -291,6 +291,27 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 
 .apexcharts-legend-text { font-family: inherit !important; }
 
+/* ---------- Login / sync ---------- */
+.login { position: fixed; inset: 0; z-index: 2500; background: var(--sidebar); display: grid; place-items: center; padding: 16px; }
+.login[hidden] { display: none; }
+.login-card { background: #fff; border-radius: 10px; padding: 34px 30px; width: 100%; max-width: 380px; display: grid; gap: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.login-card p { margin: 0; font-size: 13px; }
+.login-card .btn { justify-content: center; padding: 11px; }
+.brand-dark { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; color: var(--sidebar); }
+.brand-dark .logo { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--primary); color: var(--primary); display: grid; place-items: center; }
+.brand-dark .logo svg { width: 16px; height: 16px; }
+.login-err { color: var(--danger); font-size: 12.5px; min-height: 0; }
+.login-err:empty { display: none; }
+.sync { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.sync svg.feather { width: 16px; height: 16px; }
+.sync.saving { color: var(--primary); }
+.sync.error, .sync.auth { color: var(--danger); }
+button.user { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; padding: 4px; border-radius: 8px; }
+button.user:hover { background: #f3f4f9; }
+.dropdown a.item { color: var(--text); align-items: center; }
+.dropdown a.item:hover { background: #f7f7fb; }
+.dropdown a.item svg.feather { width: 16px; height: 16px; color: var(--muted); }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1280px) {
   .dash { grid-template-columns: 1fr; }
@@ -312,7 +333,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .stat-grid .cell:nth-child(2n) { border-right: 0 !important; }
   .stat-grid .cell:nth-last-child(-n+2) { border-bottom: 0 !important; }
   .form-grid { grid-template-columns: 1fr; }
-  .user .who, .hide-xs span { display: none; }
+  .user .who, .hide-xs span, .sync span { display: none; }
   .header { gap: 8px; }
   .avatar { width: 34px; height: 34px; }
   .pill-select { padding: 8px 6px; }

@@ -1,5 +1,4 @@
 /* Ricco Orçamento — interface */
-Store.load();
 
 const S = () => Store.state;
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -13,7 +12,7 @@ const ic = (name) => `<i data-feather="${name}"></i>`;
 const pct = (n) => (isFinite(n) ? n.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%' : '—');
 const num = (v) => { if (typeof v === 'number') return v; const s = String(v || '').trim(); if (!s) return 0; return Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s) || 0; };
 
-const app = { month: ym(todayStr()), charts: [], route: 'dashboard', sub: {} };
+const app = { month: ym(todayStr()), charts: [], route: 'dashboard', sub: {}, ready: false };
 
 const CAT_LABEL = { receita: 'Receita', despesa: 'Despesa', transferencia: 'Transferência' };
 const ACC_TYPES = { corrente: 'Conta corrente', poupanca: 'Poupança', carteira: 'Carteira / dinheiro', investimento: 'Conta investimento', outro: 'Outro' };
@@ -85,6 +84,7 @@ function deepMerge(a, b) {
 
 const ROUTES = {};
 function go() {
+  if (!app.ready) return;
   const r = (location.hash.replace(/^#\/?/, '') || 'dashboard').split('?')[0];
   app.route = ROUTES[r] ? r : 'dashboard';
   render();
@@ -1188,7 +1188,7 @@ ROUTES.configuracoes = {
           <form id="profForm" class="form-grid">${field('Seu nome', `<input class="input" name="userName" value="${esc(s.settings.userName)}">`, 'full')}
           <div class="full"><button class="btn btn-primary">Salvar</button></div></form></div></div>
         <div class="card"><div class="card-header"><h5>Backup</h5></div><div class="card-body">
-          <p class="muted" style="margin-top:0">Os dados ficam salvos apenas neste navegador (${(size / 1024).toFixed(1)} KB · ${s.tx.length} lançamentos). Exporte um backup regularmente e use-o para levar os dados a outro computador.</p>
+          <p class="muted" style="margin-top:0">Os dados ficam salvos no banco de dados (Cloudflare D1) e aparecem em qualquer aparelho em que você entrar (${(size / 1024).toFixed(1)} KB · ${s.tx.length} lançamentos). O backup em JSON é uma cópia extra de segurança.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-primary" data-action="backup">${ic('download')}Exportar backup (JSON)</button>
             <label class="btn btn-outline">${ic('upload')}Restaurar backup<input type="file" id="restore" accept=".json" hidden></label>
@@ -1212,12 +1212,9 @@ ROUTES.configuracoes = {
     };
     $('#allCsv').onclick = () => downloadCSV('lancamentos.csv', txCsvRows(S().tx.slice().sort((a, b) => a.date.localeCompare(b.date))));
     $('#wipe').onclick = () => confirmBox('Apagar <b>todos</b> os dados? Isso não pode ser desfeito.', () => {
-      const s = emptyState(); s.settings = S().settings;
-      s.accounts.push({ id: uid(), name: 'Conta principal', type: 'corrente', initial: 0, color: '#7267ef' });
-      const seedCats = seed().categories; s.categories = seedCats;
-      Store.replaceAll(s); toast('Dados apagados');
+      Store.replaceAll(blankState(S().settings), 'Dados apagados'); toast('Dados apagados');
     }, 'Apagar tudo');
-    $('#demo').onclick = () => confirmBox('Substituir os dados atuais pelos dados de exemplo?', () => { const s = seed(); s.settings = S().settings; Store.replaceAll(s); toast('Dados de exemplo carregados'); }, 'Substituir');
+    $('#demo').onclick = () => confirmBox('Substituir os dados atuais pelos dados de exemplo?', () => { const s = seed(); s.settings = S().settings; Store.replaceAll(s, 'Dados de exemplo carregados'); toast('Dados de exemplo carregados'); }, 'Substituir');
   },
 };
 
@@ -1266,4 +1263,76 @@ $('#nextMonth').onclick = () => { app.month = addYm(app.month, 1); refresh(); };
 $('#modalBg').addEventListener('mousedown', (e) => { if (e.target.id === 'modalBg') closeModal(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 window.addEventListener('hashchange', go);
-go();
+
+/* ---------- Login, sincronização e inicialização ---------- */
+const SYNC_TXT = { ok: ['cloud', 'Salvo'], saving: ['upload-cloud', 'Salvando…'], error: ['cloud-off', 'Sem conexão — tentando de novo'], auth: ['lock', 'Sessão expirada'] };
+Store.onStatus = (st) => {
+  const el = $('#sync'); const [icon, txt] = SYNC_TXT[st];
+  el.className = 'sync ' + st; el.innerHTML = ic(icon) + `<span>${txt}</span>`; el.title = txt; feather.replace();
+  if (st === 'auth') showLogin('Sua sessão expirou. Entre novamente — nada do que você lançou foi perdido.');
+};
+window.addEventListener('beforeunload', (e) => { if (app.ready && Store.pending()) { Store.flush(); e.preventDefault(); e.returnValue = ''; } });
+// ao voltar para a aba, recarrega do servidor (dados lançados em outro aparelho)
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || !app.ready || Store.pending() || $('#modalBg').classList.contains('open')) return;
+  try { await Store.init(); refresh(); } catch (e) { if (e instanceof AuthError) showLogin(); }
+});
+
+function showLogin(msg = '') {
+  $('#login').hidden = false; $('#loginErr').textContent = msg;
+  setTimeout(() => $('#loginForm [name=password]').focus(), 50);
+}
+$('#loginForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const btn = $('#loginForm button'); btn.disabled = true; $('#loginErr').textContent = '';
+  try {
+    const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: e.target.password.value }) });
+    if (!res.ok) throw new Error(res.status === 401 ? 'Senha incorreta' : 'Não foi possível entrar (erro ' + res.status + ')');
+    e.target.reset(); $('#login').hidden = true;
+    if (app.ready) { Store.flush(); } else boot();
+  } catch (err) { $('#loginErr').textContent = err.message; }
+  finally { btn.disabled = false; }
+};
+$('#logoutBtn').onclick = async (e) => {
+  e.preventDefault();
+  if (Store.pending()) await Store.flush();
+  await fetch('/api/auth/logout', { method: 'POST' });
+  location.reload();
+};
+$('#userBtn').onclick = () => $('#userMenu').classList.toggle('open');
+document.addEventListener('click', (e) => { if (!e.target.closest('#userBtn')) $('#userMenu').classList.remove('open'); });
+
+async function boot() {
+  const local = Store.localBackup();
+  let hasData;
+  try { hasData = await Store.init(); }
+  catch (e) {
+    if (e instanceof AuthError) return showLogin();
+    $('#view').innerHTML = emptyBox('Não foi possível conectar ao servidor. Verifique a internet e recarregue a página.', 'cloud-off'); feather.replace(); return;
+  }
+  app.ready = true;
+  go();
+  if (!hasData) firstRun(local);
+}
+
+/** Banco vazio: escolher como começar. */
+function firstRun(local) {
+  const hasLocal = local && local.tx && local.tx.length;
+  modal('Bem-vindo ao Ricco Orçamento', `
+    <p style="margin-top:0">Seu banco de dados está vazio. Como você quer começar?</p>
+    <div style="display:grid;gap:10px">
+      ${hasLocal ? `<label class="check"><input type="radio" name="start" value="local" checked> Importar os dados salvos neste navegador (${local.tx.length} lançamentos)</label>` : ''}
+      <label class="check"><input type="radio" name="start" value="blank" ${hasLocal ? '' : 'checked'}> Começar do zero (categorias padrão e uma conta)</label>
+      <label class="check"><input type="radio" name="start" value="demo"> Carregar dados de exemplo para conhecer o sistema</label>
+    </div>`, {
+    saveLabel: 'Começar', onSave: () => {
+      const v = $('#mform input[name=start]:checked').value;
+      if (v === 'local') Store.replaceAll(local, 'Importado do navegador');
+      else if (v === 'demo') Store.replaceAll(seed(), 'Dados de exemplo carregados');
+      else Store.replaceAll(blankState(), 'Início do zero');
+      toast('Tudo pronto!');
+    },
+  });
+}
+
+boot();

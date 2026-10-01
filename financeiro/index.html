@@ -37,13 +37,30 @@
       <button class="icon-btn bell" id="bellBtn" aria-label="Alertas"><i data-feather="bell"></i><span class="dot" id="bellCount" hidden></span></button>
       <div class="dropdown" id="alerts"></div>
     </div>
-    <div class="user">
-      <div class="avatar" id="avatar">R</div>
-      <div class="who"><b id="userName">Usuário</b><small>Controle pessoal</small></div>
+    <span class="sync" id="sync" title="Sincronização com o servidor"><i data-feather="cloud"></i><span>Salvo</span></span>
+    <div style="position:relative">
+      <button class="user" id="userBtn">
+        <div class="avatar" id="avatar">R</div>
+        <div class="who"><b id="userName">Usuário</b><small>Controle pessoal</small></div>
+      </button>
+      <div class="dropdown" id="userMenu" style="width:220px">
+        <a class="item" href="#/configuracoes"><i data-feather="settings"></i>Configurações</a>
+        <a class="item" href="#" id="logoutBtn"><i data-feather="log-out"></i>Sair</a>
+      </div>
     </div>
   </header>
 
-  <main class="main" id="view"></main>
+  <main class="main" id="view"><div class="empty" style="padding-top:120px">Carregando…</div></main>
+
+  <div class="login" id="login" hidden>
+    <form class="login-card" id="loginForm">
+      <div class="brand-dark"><span class="logo"><i data-feather="dollar-sign"></i></span>Ricco Orçamento</div>
+      <p class="muted">Entre com a sua senha para acessar o controle financeiro.</p>
+      <input class="input" type="password" name="password" placeholder="Senha" autocomplete="current-password" required>
+      <div class="login-err" id="loginErr"></div>
+      <button class="btn btn-primary" type="submit">Entrar</button>
+    </form>
+  </div>
 
   <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
   <div class="toast" id="toast"></div>
