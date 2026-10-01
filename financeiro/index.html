@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Ricco Orçamento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.2/feather.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="logo"><i data-feather="dollar-sign"></i></span>Ricco Orçamento</div>
+    <nav id="nav"></nav>
+    <div class="sidebar-promo">
+      <h5>Backup dos dados</h5>
+      <p>Seus dados ficam salvos neste navegador. Exporte uma cópia com frequência.</p>
+      <button class="btn btn-primary" data-action="backup">Exportar backup</button>
+    </div>
+  </aside>
+  <div class="backdrop" id="backdrop"></div>
+
+  <header class="header">
+    <button class="icon-btn" id="menuBtn" aria-label="Menu"><i data-feather="menu"></i></button>
+    <div class="pill-select">
+      <button id="prevMonth" aria-label="Mês anterior"><i data-feather="chevron-left"></i></button>
+      <strong id="monthLabel"></strong>
+      <button id="nextMonth" aria-label="Próximo mês"><i data-feather="chevron-right"></i></button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary hide-xs" data-action="new-tx"><i data-feather="plus"></i><span>Lançamento</span></button>
+    <div style="position:relative">
+      <button class="icon-btn bell" id="bellBtn" aria-label="Alertas"><i data-feather="bell"></i><span class="dot" id="bellCount" hidden></span></button>
+      <div class="dropdown" id="alerts"></div>
+    </div>
+    <div class="user">
+      <div class="avatar" id="avatar">R</div>
+      <div class="who"><b id="userName">Usuário</b><small>Controle pessoal</small></div>
+    </div>
+  </header>
+
+  <main class="main" id="view"></main>
+
+  <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+  <div class="toast" id="toast"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
