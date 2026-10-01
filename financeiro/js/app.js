@@ -1286,8 +1286,8 @@ $('#loginForm').onsubmit = async (e) => {
   e.preventDefault();
   const btn = $('#loginForm button'); btn.disabled = true; $('#loginErr').textContent = '';
   try {
-    const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: e.target.password.value }) });
-    if (!res.ok) throw new Error(res.status === 401 ? 'Senha incorreta' : 'Não foi possível entrar (erro ' + res.status + ')');
+    const res = await fetch('/api/fin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: e.target.password.value }) });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Não foi possível entrar (erro ' + res.status + ')'); }
     e.target.reset(); $('#login').hidden = true;
     if (app.ready) { Store.flush(); } else boot();
   } catch (err) { $('#loginErr').textContent = err.message; }
@@ -1296,7 +1296,7 @@ $('#loginForm').onsubmit = async (e) => {
 $('#logoutBtn').onclick = async (e) => {
   e.preventDefault();
   if (Store.pending()) await Store.flush();
-  await fetch('/api/auth/logout', { method: 'POST' });
+  await fetch('/api/fin/logout', { method: 'POST' });
   location.reload();
 };
 $('#userBtn').onclick = () => $('#userMenu').classList.toggle('open');
