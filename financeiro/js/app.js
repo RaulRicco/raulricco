@@ -21,7 +21,7 @@ const PALETTE = ['#7267ef', '#9a93f4', '#b9b4f8', '#5b52d6', '#17c666', '#3ec9d6
 /* ---------- Navegação ---------- */
 const NAV = [
   { cap: 'Navegação', items: [['dashboard', 'Visão geral', 'home']] },
-  { cap: 'Movimentações', sub: 'Lançamentos e contas', items: [['extrato', 'Extrato', 'list'], ['pagar-receber', 'Contas a pagar/receber', 'calendar'], ['cartoes', 'Cartões de crédito', 'credit-card'], ['conciliacao', 'Conciliação e importação', 'check-square']] },
+  { cap: 'Movimentações', sub: 'Lançamentos e contas', items: [['extrato', 'Extrato', 'list'], ['pagar-receber', 'Contas a pagar/receber', 'calendar'], ['fixos', 'Lançamentos fixos', 'repeat'], ['cartoes', 'Cartões de crédito', 'credit-card'], ['conciliacao', 'Conciliação e importação', 'check-square']] },
   { cap: 'Planejamento', sub: 'Orçamento e objetivos', items: [['orcamento', 'Orçamento', 'pie-chart'], ['metas', 'Metas', 'target']] },
   { cap: 'Patrimônio', sub: 'Bens e investimentos', items: [['investimentos', 'Investimentos', 'trending-up'], ['patrimonio', 'Patrimônio', 'briefcase']] },
   { cap: 'Gestão', sub: 'Análises e cadastros', items: [['relatorios', 'Relatórios', 'bar-chart-2'], ['centros', 'Centros de custo', 'layers'], ['contatos', 'Clientes e fornecedores', 'users']] },
@@ -90,6 +90,7 @@ function go() {
   render();
 }
 function render() {
+  Store.materialize(app.month);
   destroyCharts();
   document.body.classList.remove('nav-open');
   renderNav(); renderHeader();
@@ -155,8 +156,9 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 const field = (label, input, cls = '') => `<div class="field ${cls}"><label>${label}</label>${input}</div>`;
 
 /* ---------- Formulário de lançamento ---------- */
-function txForm(t = {}, preset = {}) {
+function txForm(t = {}, preset = {}, opts = {}) {
   const isNew = !t.id;
+  const rec = t.recurrenceId && Store.get('recurrences', t.recurrenceId);
   t = { type: 'despesa', date: todayStr(), paid: false, ...preset, ...t };
   const srcVal = t.cardId && !t.cardPayment ? 'card:' + t.cardId : t.accountId ? 'acc:' + t.accountId : (S().accounts[0] ? 'acc:' + S().accounts[0].id : '');
   const srcOpts = `<optgroup label="Contas">${S().accounts.filter((a) => !a.archived || a.id === t.accountId).map((a) => `<option value="acc:${a.id}" ${srcVal === 'acc:' + a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</optgroup>` +
@@ -175,7 +177,8 @@ function txForm(t = {}, preset = {}) {
       <div class="field" id="catWrap"><label>Categoria</label><select class="input" name="categoryId" id="catSel">${catOptions(t.type === 'transferencia' ? 'despesa' : t.type, t.categoryId)}</select></div>
       ${field('Centro de custo', `<select class="input" name="costCenterId">${optList(S().costCenters, t.costCenterId, 'Nenhum')}</select>`)}
       ${field('Cliente / fornecedor', `<select class="input" name="contactId">${optList(S().contacts, t.contactId, 'Nenhum')}</select>`)}
-      ${isNew ? field('Repetição', `<div style="display:flex;gap:8px"><select class="input" name="repeat" id="repSel"><option value="">Não repetir</option><option value="parcelado">Parcelado</option><option value="fixo">Fixo mensal</option></select><input class="input" name="times" type="number" min="2" max="120" value="12" style="width:90px" id="repN" hidden></div>`) : '<div></div>'}
+      ${rec ? `<div class="field"><label>Lançamento fixo</label><label class="check" style="margin-top:10px"><input type="checkbox" name="applyFuture" ${opts.applyFuture ? 'checked' : ''}> Aplicar também aos próximos meses</label></div>` : ''}
+      ${isNew ? field('Repetição', `<div style="display:flex;gap:8px"><select class="input" name="repeat" id="repSel"><option value="">Não repetir</option><option value="parcelado">Parcelado</option><option value="fixo">Fixo mensal por X meses</option><option value="sempre" ${preset.repeat === 'sempre' ? 'selected' : ''}>Fixo mensal — para sempre</option></select><input class="input" name="times" type="number" min="2" max="120" value="12" style="width:90px" id="repN" hidden></div>`) : '<div></div>'}
       ${field('Observações', `<textarea class="input" name="notes" placeholder="Opcional">${esc(t.notes)}</textarea>`, 'full')}
       <label class="check full" id="paidWrap"><input type="checkbox" name="paid" ${t.paid ? 'checked' : ''}> <span id="paidLabel">Já foi pago</span></label>
     </div>`;
@@ -196,7 +199,24 @@ function txForm(t = {}, preset = {}) {
       if (!base.accountId && !base.cardId) { toast('Cadastre uma conta primeiro'); return false; }
       if (base.type === 'transferencia' && base.toAccountId === base.accountId) { toast('Escolha contas diferentes'); return false; }
       base.paidDate = base.paid ? (t.paidDate && t.paid ? t.paidDate : base.date) : null;
-      if (!isNew) { Store.upsert('tx', { ...t, ...base, amount: round2(amount) }); toast('Lançamento atualizado'); return; }
+      if (!isNew) {
+        Store.upsert('tx', { ...t, ...base, amount: round2(amount) });
+        if (rec && d.applyFuture) {
+          Object.assign(rec, Store.recFields({ ...base, amount: round2(amount) }), { startDate: rec.startDate.slice(0, 8) + base.date.slice(8) });
+          S().tx.forEach((x) => { if (x.recurrenceId === rec.id && !x.paid && x.recMonth > t.recMonth) Object.assign(x, Store.recFields(rec), { date: Store.recDate(rec, x.recMonth) }); });
+          Store.log('editou', 'recurrences', rec.desc + ' (próximos meses)'); Store.save();
+          toast('Atualizado neste e nos próximos meses');
+        } else toast('Lançamento atualizado');
+        return;
+      }
+      if (d.repeat === 'sempre') {
+        const r = Store.upsert('recurrences', { id: uid(), ...Store.recFields({ ...base, amount: round2(amount) }), startDate: base.date, endYm: null, skips: [] }, base.desc);
+        const m = ym(base.date);
+        S().tx.push({ ...Store.recFields(r), id: Store.recTxId(r, m), date: base.date, paid: base.paid, paidDate: base.paidDate, reconciled: false, recurrenceId: r.id, recMonth: m });
+        Store.materialize(app.month);
+        toast('Lançamento fixo criado — repete todo mês');
+        return;
+      }
       const n = d.repeat ? Math.max(2, Math.min(120, Number(d.times) || 2)) : 1;
       const groupId = n > 1 ? uid() : null;
       const each = d.repeat === 'parcelado' ? Math.floor(amount / n * 100) / 100 : amount;
@@ -231,11 +251,29 @@ function txForm(t = {}, preset = {}) {
     sync();
   });
   $('#srcSel').onchange = sync;
-  if ($('#repSel')) $('#repSel').onchange = () => { $('#repN').hidden = !$('#repSel').value; };
+  if ($('#repSel')) $('#repSel').onchange = () => { $('#repN').hidden = !$('#repSel').value || $('#repSel').value === 'sempre'; };
   sync();
 }
 
 function deleteTx(t) {
+  const rec = t.recurrenceId && Store.get('recurrences', t.recurrenceId);
+  if (rec) {
+    modal('Excluir lançamento fixo', `
+      <p style="margin:0 0 14px"><b>${esc(t.desc)}</b> (${money(t.amount)}) se repete todo mês. O que você quer apagar?</p>
+      <div style="display:grid;gap:10px">
+        <label class="check"><input type="radio" name="scope" value="one" checked> Apagar só este (${monthName(t.recMonth, true)})</label>
+        <label class="check"><input type="radio" name="scope" value="next"> Apagar este e todos os próximos (encerra o lançamento fixo)</label>
+        <label class="check"><input type="radio" name="scope" value="all"> Apagar todos, inclusive os meses anteriores</label>
+      </div>`, {
+      saveLabel: 'Excluir', onSave: () => {
+        const scope = $('#mform input[name=scope]:checked').value;
+        if (scope === 'one') { rec.skips = [...(rec.skips || []), t.recMonth]; Store.remove('tx', t.id, t.desc); toast('Excluído só este mês'); }
+        else if (scope === 'next') { Store.endRecurrence(rec, addYm(t.recMonth, -1)); toast('Lançamento fixo encerrado'); }
+        else { Store.deleteRecurrence(rec, false); toast('Lançamento fixo apagado'); }
+      },
+    });
+    return;
+  }
   const group = t.groupId ? S().tx.filter((x) => x.groupId === t.groupId && x.date >= t.date) : [];
   const body = `<p style="margin:0 0 12px">Excluir <b>${esc(t.desc)}</b> (${money(t.amount)})?</p>` +
     (group.length > 1 ? `<label class="check"><input type="checkbox" name="all"> Excluir também os ${group.length - 1} lançamentos seguintes desta série</label>` : '');
@@ -445,7 +483,7 @@ ROUTES.extrato = {
       ${rows.map((t) => `<tr>
         <td><input type="checkbox" class="check" data-rec="${t.id}" ${t.reconciled ? 'checked' : ''} ${t.paid ? '' : 'disabled'} title="Conciliado" style="accent-color:var(--primary)"></td>
         <td>${fdate(t.date)}</td>
-        <td class="desc-cell"><b>${esc(t.desc)}</b><small>${t.type === 'transferencia' ? `Transferência → ${esc(Store.get('accounts', t.toAccountId)?.name)}` : t.cardPayment ? 'Pagamento de fatura' : `<span class="dot-c" style="background:${catColor(t.categoryId)}"></span>${esc(catName(t.categoryId))}`}${t.costCenterId ? ' · ' + esc(Store.get('costCenters', t.costCenterId)?.name) : ''}</small></td>
+        <td class="desc-cell"><b>${esc(t.desc)}${t.recurrenceId ? ' <span class="badge b-primary" title="Lançamento fixo">↻ fixo</span>' : ''}</b><small>${t.type === 'transferencia' ? `Transferência → ${esc(Store.get('accounts', t.toAccountId)?.name)}` : t.cardPayment ? 'Pagamento de fatura' : `<span class="dot-c" style="background:${catColor(t.categoryId)}"></span>${esc(catName(t.categoryId))}`}${t.costCenterId ? ' · ' + esc(Store.get('costCenters', t.costCenterId)?.name) : ''}</small></td>
         <td>${esc(accName(t))}</td>
         <td class="num ${t.type === 'receita' ? 'pos' : t.type === 'despesa' ? 'neg' : ''}">${t.type === 'despesa' ? '−' : t.type === 'receita' ? '+' : ''} ${money(t.amount)}</td>
         <td>${statusBadge(t)}</td>
@@ -457,7 +495,7 @@ ROUTES.extrato = {
       </tbody></table>` : emptyBox('Nenhum lançamento encontrado para este filtro.');
     feather.replace();
     $$('[data-edit]').forEach((b) => b.onclick = () => txForm(Store.get('tx', b.dataset.edit)));
-    $$('[data-dup]').forEach((b) => b.onclick = () => { const t = Store.get('tx', b.dataset.dup); const { id, groupId, paid, paidDate, reconciled, ...rest } = t; txForm({}, rest); });
+    $$('[data-dup]').forEach((b) => b.onclick = () => { const t = Store.get('tx', b.dataset.dup); const { id, groupId, paid, paidDate, reconciled, recurrenceId, recMonth, ...rest } = t; txForm({}, rest); });
     $$('[data-del]').forEach((b) => b.onclick = () => deleteTx(Store.get('tx', b.dataset.del)));
     $$('[data-pay]').forEach((b) => b.onclick = () => togglePaid(Store.get('tx', b.dataset.pay)));
     $$('[data-rec]').forEach((b) => b.onchange = () => { const t = Store.get('tx', b.dataset.rec); t.reconciled = b.checked; Store.log('conciliou', 'tx', t.desc); Store.save(); });
@@ -510,6 +548,60 @@ ROUTES['pagar-receber'] = {
     $$('[data-tab]').forEach((b) => b.onclick = () => { app.sub.pr = b.dataset.tab; refresh(); });
     $$('[data-pay]').forEach((b) => b.onclick = () => payItem(list[b.dataset.pay]));
     $$('[data-edit]').forEach((b) => b.onclick = () => txForm(Store.get('tx', b.dataset.edit)));
+  },
+};
+
+/* ====================================================================== */
+/* LANÇAMENTOS FIXOS                                                      */
+/* ====================================================================== */
+ROUTES.fixos = {
+  html() {
+    const t0 = todayStr(), cur = ym(t0);
+    const recs = (S().recurrences || []).slice().sort((a, b) => (!!a.endYm && a.endYm < cur) - (!!b.endYm && b.endYm < cur) || a.desc.localeCompare(b.desc));
+    const active = recs.filter((r) => !r.endYm || r.endYm >= cur);
+    const sum = (type) => active.filter((r) => r.type === type).reduce((s, r) => s + r.amount, 0);
+    return head('Lançamentos fixos', 'Receitas e despesas que se repetem todo mês', `<button class="btn btn-primary" id="newFix">${ic('plus')}Novo lançamento fixo</button>`) + `
+      <div class="grid g-3" style="margin-bottom:24px">
+        <div class="card"><div class="kpi"><div><h6 class="muted">Receitas fixas / mês</h6><div class="val pos">${money(sum('receita'))}</div></div>${ic('arrow-down-circle')}</div></div>
+        <div class="card"><div class="kpi"><div><h6 class="muted">Despesas fixas / mês</h6><div class="val neg">${money(sum('despesa'))}</div></div>${ic('arrow-up-circle')}</div></div>
+        <div class="card primary"><div class="kpi"><div><h6>Saldo fixo / mês</h6><div class="val">${money(sum('receita') - sum('despesa'))}</div></div>${ic('repeat')}</div></div>
+      </div>
+      <div class="card"><div class="table-wrap">${recs.length ? `<table class="tbl"><thead><tr><th>Descrição</th><th>Conta</th><th>Dia</th><th class="num">Valor</th><th>Situação</th><th>Próximo</th><th class="act"></th></tr></thead><tbody>
+        ${recs.map((r) => {
+          const ended = r.endYm && r.endYm < cur;
+          const next = S().tx.filter((t) => t.recurrenceId === r.id && !t.paid).sort((a, b) => a.date.localeCompare(b.date))[0];
+          return `<tr style="${ended ? 'opacity:.55' : ''}">
+          <td class="desc-cell"><b>${esc(r.desc)}</b><small>${r.type === 'transferencia' ? 'Transferência' : `<span class="dot-c" style="background:${catColor(r.categoryId)}"></span>${esc(catName(r.categoryId))}`}</small></td>
+          <td>${esc(accName(r))}</td><td>Dia ${Number(r.startDate.slice(8))}</td>
+          <td class="num ${r.type === 'receita' ? 'pos' : r.type === 'despesa' ? 'neg' : ''}">${money(r.amount)}</td>
+          <td>${ended ? `<span class="badge b-muted">Encerrado em ${monthName(r.endYm)}</span>` : r.endYm ? `<span class="badge b-warning">Até ${monthName(r.endYm)}</span>` : '<span class="badge b-success">Para sempre</span>'}<br><small class="muted">desde ${fdate(r.startDate)}</small></td>
+          <td>${next ? fdate(next.date) : '—'}</td>
+          <td class="act">${next ? `<button class="btn-icon" data-fe="${next.id}" title="Editar (aplica aos próximos meses)">${ic('edit-2')}</button>` : ''}
+            ${ended ? '' : `<button class="btn-icon" data-fend="${r.id}" title="Encerrar">${ic('stop-circle')}</button>`}
+            <button class="btn-icon" data-fdel="${r.id}" title="Apagar">${ic('trash-2')}</button></td></tr>`; }).join('')}
+      </tbody></table>` : emptyBox('Nenhum lançamento fixo. Cadastre salário, aluguel, assinaturas… e eles aparecem todo mês automaticamente.', 'repeat')}</div></div>`;
+  },
+  after() {
+    $('#newFix').onclick = () => txForm({}, { repeat: 'sempre' });
+    $$('[data-fe]').forEach((b) => b.onclick = () => txForm(Store.get('tx', b.dataset.fe), {}, { applyFuture: true }));
+    $$('[data-fend]').forEach((b) => b.onclick = () => {
+      const r = Store.get('recurrences', b.dataset.fend);
+      modal('Encerrar lançamento fixo', `<p style="margin:0 0 14px"><b>${esc(r.desc)}</b> deixará de ser lançado a partir do mês escolhido. Os meses anteriores são mantidos.</p>
+        ${field('Último mês a lançar', `<input class="input" type="month" name="last" required value="${ym(todayStr())}">`)}`, {
+        saveLabel: 'Encerrar', onSave: (d) => { Store.endRecurrence(r, d.last, true); toast('Lançamento fixo encerrado'); },
+      });
+    });
+    $$('[data-fdel]').forEach((b) => b.onclick = () => {
+      const r = Store.get('recurrences', b.dataset.fdel);
+      const paid = S().tx.filter((t) => t.recurrenceId === r.id && t.paid).length;
+      modal('Apagar lançamento fixo', `<p style="margin:0 0 14px">Apagar <b>${esc(r.desc)}</b>?</p>
+        <div style="display:grid;gap:10px">
+          <label class="check"><input type="radio" name="scope" value="keep" checked> Apagar e manter o histórico já pago (${paid} lançamento${paid === 1 ? '' : 's'})</label>
+          <label class="check"><input type="radio" name="scope" value="all"> Apagar tudo, inclusive os já pagos</label>
+        </div>`, {
+        saveLabel: 'Apagar', onSave: () => { Store.deleteRecurrence(r, $('#mform input[name=scope]:checked').value === 'keep'); toast('Lançamento fixo apagado'); },
+      });
+    });
   },
 };
 
@@ -1221,7 +1313,7 @@ ROUTES.configuracoes = {
 ROUTES.auditoria = {
   html() {
     const a = S().audit.slice(0, 300);
-    const labels = { tx: 'Lançamento', accounts: 'Conta', cards: 'Cartão', categories: 'Categoria', costCenters: 'Centro de custo', contacts: 'Contato', budgets: 'Orçamento', goals: 'Meta', assets: 'Patrimônio', investments: 'Investimento', settings: 'Configuração', backup: 'Backup', sistema: 'Sistema' };
+    const labels = { tx: 'Lançamento', accounts: 'Conta', cards: 'Cartão', categories: 'Categoria', costCenters: 'Centro de custo', contacts: 'Contato', budgets: 'Orçamento', goals: 'Meta', assets: 'Patrimônio', investments: 'Investimento', recurrences: 'Lançamento fixo', settings: 'Configuração', backup: 'Backup', sistema: 'Sistema' };
     return head('Auditoria', 'Histórico de alterações feitas no sistema (últimos 300 registros)') + `
       <div class="card"><div class="table-wrap">${a.length ? `<table class="tbl"><thead><tr><th>Data e hora</th><th>Ação</th><th>Módulo</th><th>Descrição</th></tr></thead><tbody>
       ${a.map((x) => `<tr><td style="white-space:nowrap">${new Date(x.ts).toLocaleString('pt-BR')}</td><td><span class="badge ${x.action === 'excluiu' ? 'b-danger' : x.action === 'criou' ? 'b-success' : 'b-primary'}">${esc(x.action)}</span></td><td>${labels[x.entity] || esc(x.entity)}</td><td>${esc(x.desc)}</td></tr>`).join('')}

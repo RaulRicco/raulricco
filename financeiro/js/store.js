@@ -1,6 +1,6 @@
 /* Ricco Orçamento — camada de dados (Cloudflare D1 via /api/fin, com cache local) */
 const KEY = 'financakit:v1';
-const COLLS = ['accounts', 'cards', 'categories', 'costCenters', 'contacts', 'tx', 'budgets', 'goals', 'assets', 'investments', 'audit'];
+const COLLS = ['accounts', 'cards', 'categories', 'costCenters', 'contacts', 'tx', 'recurrences', 'budgets', 'goals', 'assets', 'investments', 'audit'];
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const pad = (n) => String(n).padStart(2, '0');
@@ -16,13 +16,14 @@ const addMonths = (s, n) => {
 };
 const addYm = (s, n) => addMonths(s + '-01', n).slice(0, 7);
 const round2 = (n) => Math.round(n * 100) / 100;
+const monthsBetween = (a, b) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7));
 
 function emptyState() {
   return {
     version: 1,
     settings: { userName: 'Usuário' },
     accounts: [], cards: [], categories: [], costCenters: [], contacts: [],
-    tx: [], budgets: [], goals: [], assets: [], investments: [], audit: [],
+    tx: [], recurrences: [], budgets: [], goals: [], assets: [], investments: [], audit: [],
   };
 }
 
@@ -156,6 +157,50 @@ const Store = {
   },
 
   get(coll, id) { return this.state[coll].find((x) => x.id === id); },
+
+  /* ---------- Lançamentos fixos (recorrentes) ---------- */
+  /** Campos copiados do modelo para cada ocorrência. */
+  recFields(r) {
+    const { type, desc, amount, accountId, cardId, toAccountId, categoryId, costCenterId, contactId, notes } = r;
+    return { type, desc, amount, accountId, cardId, toAccountId, categoryId, costCenterId, contactId, notes };
+  },
+  recTxId(r, month) { return `r_${r.id}_${month}`; },
+  recDate(r, month) { return addMonths(r.startDate, monthsBetween(ym(r.startDate), month)); },
+
+  /** Gera as ocorrências que faltam até `untilYm` (mín. 12 meses à frente). IDs determinísticos evitam duplicatas entre aparelhos. */
+  materialize(untilYm) {
+    const recs = this.state.recurrences || [];
+    if (!recs.length) return 0;
+    let until = addYm(ym(todayStr()), 12);
+    if (untilYm && untilYm > until) until = untilYm;
+    const have = new Set(this.state.tx.filter((t) => t.recurrenceId).map((t) => t.recurrenceId + '|' + t.recMonth));
+    let created = 0;
+    for (const r of recs) {
+      const last = r.endYm && r.endYm < until ? r.endYm : until;
+      const skips = new Set(r.skips || []);
+      for (let m = ym(r.startDate); m <= last; m = addYm(m, 1)) {
+        if (have.has(r.id + '|' + m) || skips.has(m)) continue;
+        this.state.tx.push({ ...this.recFields(r), id: this.recTxId(r, m), date: this.recDate(r, m), paid: false, paidDate: null, reconciled: false, recurrenceId: r.id, recMonth: m });
+        created++;
+      }
+    }
+    if (created) this.save();
+    return created;
+  },
+
+  /** Encerra a recorrência: mantém até `lastYm` (inclusive) e apaga as ocorrências depois disso. */
+  endRecurrence(r, lastYm, onlyUnpaid = false) {
+    this.state.tx = this.state.tx.filter((t) => !(t.recurrenceId === r.id && t.recMonth > lastYm && (!onlyUnpaid || !t.paid)));
+    if (lastYm < ym(r.startDate)) this.remove('recurrences', r.id, r.desc);
+    else { r.endYm = lastYm; this.log('encerrou', 'recurrences', `${r.desc} (último: ${lastYm})`); this.save(); }
+  },
+
+  /** Apaga a recorrência e suas ocorrências (todas, ou só as não pagas). */
+  deleteRecurrence(r, keepPaid) {
+    this.state.tx = this.state.tx.filter((t) => t.recurrenceId !== r.id || (keepPaid && t.paid));
+    this.state.tx.forEach((t) => { if (t.recurrenceId === r.id) t.recurrenceId = null; });
+    this.remove('recurrences', r.id, r.desc);
+  },
 };
 
 /* ---------- Cálculos ---------- */

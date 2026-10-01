@@ -1,6 +1,6 @@
 export const FIN_COLLECTIONS = [
   'settings', 'accounts', 'cards', 'categories', 'costCenters', 'contacts',
-  'tx', 'budgets', 'goals', 'assets', 'investments', 'audit',
+  'tx', 'recurrences', 'budgets', 'goals', 'assets', 'investments', 'audit',
 ];
 
 const CHUNK = 100;
