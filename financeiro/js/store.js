@@ -278,10 +278,19 @@ const Calc = {
   /** Lançamentos que contam como receita/despesa (exclui transferências e pagamento de fatura). */
   isResult(t) { return t.type !== 'transferencia' && !t.cardPayment && !t.invoiceResidual; },
 
+  /** Mês em que o lançamento conta no orçamento/relatórios. Compras no cartão contam no mês da fatura, salvo se a configuração pedir data da compra. */
+  monthOf(t) {
+    if (t.cardId && !t.cardPayment && Store.state.settings.cardMonth !== 'compra') {
+      const card = Store.get('cards', t.cardId);
+      if (card) return this.invoiceOf(card, t.date);
+    }
+    return ym(t.date);
+  },
+
   monthTotals(month) {
     let rec = 0, desp = 0, recPaid = 0, despPaid = 0;
     for (const t of Store.state.tx) {
-      if (!this.isResult(t) || ym(t.date) !== month) continue;
+      if (!this.isResult(t) || this.monthOf(t) !== month) continue;
       if (t.type === 'receita') { rec += t.amount; if (t.paid) recPaid += t.amount; }
       else { desp += t.amount; if (t.paid || t.cardId) despPaid += t.amount; }
     }
@@ -292,7 +301,7 @@ const Calc = {
     const map = {};
     for (const t of Store.state.tx) {
       if (!this.isResult(t) || t.type !== type) continue;
-      if (month && !(Array.isArray(month) ? month.includes(ym(t.date)) : ym(t.date) === month)) continue;
+      if (month && !(Array.isArray(month) ? month.includes(this.monthOf(t)) : this.monthOf(t) === month)) continue;
       if (filterFn && !filterFn(t)) continue;
       const cat = Store.get('categories', t.categoryId);
       const root = cat && cat.parentId ? Store.get('categories', cat.parentId) : cat;
@@ -307,7 +316,7 @@ const Calc = {
 
   spentInCategory(catId, month) {
     return round2(Store.state.tx.filter((t) => {
-      if (!this.isResult(t) || t.type !== 'despesa' || ym(t.date) !== month) return false;
+      if (!this.isResult(t) || t.type !== 'despesa' || this.monthOf(t) !== month) return false;
       if (t.categoryId === catId) return true;
       const c = Store.get('categories', t.categoryId);
       return c && c.parentId === catId;

@@ -1152,7 +1152,7 @@ ROUTES.relatorios = {
       return { rec, desp, res: rec - desp };
     };
     const list = [...S().costCenters, { id: null, name: 'Sem centro de custo' }];
-    const rows = list.map((c) => ({ c, mo: calc(c.id, (t) => ym(t.date) === m), yr: calc(c.id, (t) => t.date.startsWith(y)) }));
+    const rows = list.map((c) => ({ c, mo: calc(c.id, (t) => Calc.monthOf(t) === m), yr: calc(c.id, (t) => Calc.monthOf(t).startsWith(y)) }));
     this.csv = [['Centro', 'Receitas mês', 'Despesas mês', 'Resultado mês', `Receitas ${y}`, `Despesas ${y}`, `Resultado ${y}`], ...rows.map((r) => [r.c.name, r.mo.rec, r.mo.desp, r.mo.res, r.yr.rec, r.yr.desp, r.yr.res])];
     return `<div class="table-wrap"><table class="tbl"><thead><tr><th>Centro de custo / projeto</th><th class="num">Receitas mês</th><th class="num">Despesas mês</th><th class="num">Resultado mês</th><th class="num">Resultado ${y}</th></tr></thead><tbody>
       ${rows.map((r) => `<tr><td>${esc(r.c.name)}</td><td class="num pos">${money(r.mo.rec)}</td><td class="num neg">${money(r.mo.desp)}</td><td class="num ${r.mo.res >= 0 ? 'pos' : 'neg'}">${money(r.mo.res)}</td><td class="num ${r.yr.res >= 0 ? 'pos' : 'neg'}">${money(r.yr.res)}</td></tr>`).join('')}
@@ -1343,6 +1343,10 @@ ROUTES.configuracoes = {
         <div class="card"><div class="card-header"><h5>Perfil</h5></div><div class="card-body">
           <form id="profForm" class="form-grid">${field('Seu nome', `<input class="input" name="userName" value="${esc(s.settings.userName)}">`, 'full')}
           <div class="full"><button class="btn btn-primary">Salvar</button></div></form></div></div>
+        <div class="card"><div class="card-header"><h5>Compras no cartão</h5></div><div class="card-body">
+          <form id="cardMonthForm" class="form-grid">${field('Contam no orçamento e nos relatórios pelo', `<select class="input" name="cardMonth"><option value="fatura"${s.settings.cardMonth !== 'compra' ? ' selected' : ''}>Mês da fatura (quando você paga)</option><option value="compra"${s.settings.cardMonth === 'compra' ? ' selected' : ''}>Mês da compra</option></select>`, 'full')}
+          <p class="muted full" style="margin:0">Pelo mês da fatura, o orçamento de novembro mostra tudo que está na fatura que vence em novembro.</p>
+          <div class="full"><button class="btn btn-primary">Salvar</button></div></form></div></div>
         <div class="card"><div class="card-header"><h5>Backup</h5></div><div class="card-body">
           <p class="muted" style="margin-top:0">Os dados ficam salvos no banco de dados (Cloudflare D1) e aparecem em qualquer aparelho em que você entrar (${(size / 1024).toFixed(1)} KB · ${s.tx.length} lançamentos). O backup em JSON é uma cópia extra de segurança.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1361,6 +1365,7 @@ ROUTES.configuracoes = {
   },
   after() {
     $('#profForm').onsubmit = (e) => { e.preventDefault(); S().settings.userName = e.target.userName.value.trim() || 'Usuário'; Store.log('editou', 'settings', 'Perfil'); Store.save(); toast('Perfil salvo'); refresh(); };
+    $('#cardMonthForm').onsubmit = (e) => { e.preventDefault(); S().settings.cardMonth = e.target.cardMonth.value; Store.log('editou', 'settings', 'Compras no cartão: ' + (S().settings.cardMonth === 'compra' ? 'mês da compra' : 'mês da fatura')); Store.save(); toast('Preferência salva'); refresh(); };
     $('#restore').onchange = async (e) => {
       const f = e.target.files[0]; if (!f) return;
       try { const data = JSON.parse(await f.text()); if (!Array.isArray(data.tx) || !Array.isArray(data.accounts)) throw 0; confirmBox('Substituir todos os dados atuais pelo backup?', () => { Store.replaceAll(data); toast('Backup restaurado'); }, 'Restaurar'); }
