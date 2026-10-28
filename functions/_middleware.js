@@ -9,8 +9,13 @@ const PUBLIC_ROUTES = [
   { method: 'POST', pathname: '/api/fin/logout' },
 ];
 
+// Arquivos de trabalho que ficam na pasta do site mas não devem ser servidos
+const PRIVATE_FILES = ['/RUMINACOES.md'];
+
 export async function onRequest({ request, next, env }) {
   const url = new URL(request.url);
+
+  if (PRIVATE_FILES.includes(url.pathname)) return new Response('Not found', { status: 404 });
 
   // Ricco Orçamento: página e arquivos só com sessão própria do financeiro
   if (url.pathname === '/financeiro' || url.pathname.startsWith('/financeiro/')) {
