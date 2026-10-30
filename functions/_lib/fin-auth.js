@@ -62,10 +62,10 @@ export function loginPage() {
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:#1c232f;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1d2630}
 form{background:#fff;border-radius:10px;padding:34px 30px;width:100%;max-width:380px;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px}.logo{width:32px;height:32px;border-radius:50%;border:2px solid #7267ef;color:#7267ef;display:grid;place-items:center;font-weight:700}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px}.logo{width:32px;height:32px;border-radius:50%;border:2px solid #2563eb;color:#2563eb;display:grid;place-items:center;font-weight:700}
 p{margin:0;font-size:13px;color:#6b7280}input{width:100%;border:1px solid #dfe2ec;border-radius:6px;padding:11px 12px;font:inherit;font-size:14px;outline:none}
-input:focus{border-color:#7267ef;box-shadow:0 0 0 3px rgba(114,103,239,.15)}button{background:#7267ef;color:#fff;border:0;border-radius:6px;padding:11px;font:inherit;font-weight:500;cursor:pointer}
-button:hover{background:#6358e6}button:disabled{opacity:.6}.err{color:#ea4d4d;font-size:12.5px}.err:empty{display:none}
+input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.15)}button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:11px;font:inherit;font-weight:500;cursor:pointer}
+button:hover{background:#1d4ed8}button:disabled{opacity:.6}.err{color:#ea4d4d;font-size:12.5px}.err:empty{display:none}
 </style></head><body>
 <form id="f"><div class="brand"><span class="logo">$</span>Ricco Orçamento</div>
 <p>Acesso restrito. Digite a senha para continuar.</p>
