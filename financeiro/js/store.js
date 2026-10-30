@@ -367,7 +367,7 @@ function blankState(settings) {
   const s = emptyState();
   if (settings) s.settings = settings;
   s.categories = seed().categories;
-  s.accounts.push({ id: uid(), name: 'Conta principal', type: 'corrente', initial: 0, color: '#7267ef' });
+  s.accounts.push({ id: uid(), name: 'Conta principal', type: 'corrente', initial: 0, color: '#c4161c' });
   s.costCenters.push({ id: uid(), name: 'Pessoal' });
   return s;
 }
@@ -378,29 +378,29 @@ function seed() {
   const cat = (name, type, color, parentId) => { const c = { id: uid(), name, type, color, parentId: parentId || null }; s.categories.push(c); return c; };
   const salario = cat('Salário', 'receita', '#17c666');
   const freela = cat('Serviços / Freelas', 'receita', '#3ec9d6');
-  const rendim = cat('Rendimentos', 'receita', '#7267ef');
+  const rendim = cat('Rendimentos', 'receita', '#c4161c');
   cat('Outras receitas', 'receita', '#a3a0f5');
-  const moradia = cat('Moradia', 'despesa', '#7267ef');
-  const aluguel = cat('Aluguel', 'despesa', '#7267ef', moradia.id);
-  const energia = cat('Energia e água', 'despesa', '#7267ef', moradia.id);
-  const internet = cat('Internet e telefone', 'despesa', '#7267ef', moradia.id);
-  const alim = cat('Alimentação', 'despesa', '#9a93f4');
-  const mercado = cat('Supermercado', 'despesa', '#9a93f4', alim.id);
-  const restaurante = cat('Restaurantes', 'despesa', '#9a93f4', alim.id);
-  const transp = cat('Transporte', 'despesa', '#b9b4f8');
+  const moradia = cat('Moradia', 'despesa', '#c4161c');
+  const aluguel = cat('Aluguel', 'despesa', '#c4161c', moradia.id);
+  const energia = cat('Energia e água', 'despesa', '#c4161c', moradia.id);
+  const internet = cat('Internet e telefone', 'despesa', '#c4161c', moradia.id);
+  const alim = cat('Alimentação', 'despesa', '#e05a5f');
+  const mercado = cat('Supermercado', 'despesa', '#e05a5f', alim.id);
+  const restaurante = cat('Restaurantes', 'despesa', '#e05a5f', alim.id);
+  const transp = cat('Transporte', 'despesa', '#f0a3a6');
   const saude = cat('Saúde', 'despesa', '#ea4d4d');
   const lazer = cat('Lazer', 'despesa', '#ffa21d');
   const educ = cat('Educação', 'despesa', '#3ec9d6');
-  const assin = cat('Assinaturas', 'despesa', '#5b52d6');
+  const assin = cat('Assinaturas', 'despesa', '#8e0f14');
   const impostos = cat('Impostos e taxas', 'despesa', '#6b7280');
   cat('Outras despesas', 'despesa', '#c4c8d4');
 
-  const nubank = { id: uid(), name: 'Conta Corrente', type: 'corrente', initial: 4200, color: '#7267ef' };
+  const nubank = { id: uid(), name: 'Conta Corrente', type: 'corrente', initial: 4200, color: '#c4161c' };
   const poup = { id: uid(), name: 'Poupança', type: 'poupanca', initial: 8000, color: '#17c666' };
   const cart = { id: uid(), name: 'Carteira', type: 'carteira', initial: 500, color: '#ffa21d' };
   s.accounts.push(nubank, poup, cart);
 
-  const card = { id: uid(), name: 'Cartão Roxo', limit: 6000, closeDay: 3, dueDay: 10, color: '#7267ef', accountId: nubank.id };
+  const card = { id: uid(), name: 'Cartão Vermelho', limit: 6000, closeDay: 3, dueDay: 10, color: '#c4161c', accountId: nubank.id };
   s.cards.push(card);
 
   const pessoal = { id: uid(), name: 'Pessoal' }, trab = { id: uid(), name: 'Trabalho' };
@@ -456,7 +456,7 @@ function seed() {
     { id: uid(), categoryId: assin.id, amount: 80 },
   );
   s.goals.push(
-    { id: uid(), name: 'Reserva de emergência', target: 30000, saved: 14500, deadline: addMonths(today, 10), color: '#7267ef' },
+    { id: uid(), name: 'Reserva de emergência', target: 30000, saved: 14500, deadline: addMonths(today, 10), color: '#c4161c' },
     { id: uid(), name: 'Viagem de férias', target: 8000, saved: 2300, deadline: addMonths(today, 6), color: '#17c666' },
   );
   s.investments.push(

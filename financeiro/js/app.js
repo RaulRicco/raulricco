@@ -16,7 +16,7 @@ const app = { month: ym(todayStr()), charts: [], route: 'dashboard', sub: {}, re
 
 const CAT_LABEL = { receita: 'Receita', despesa: 'Despesa', transferencia: 'Transferência' };
 const ACC_TYPES = { corrente: 'Conta corrente', poupanca: 'Poupança', carteira: 'Carteira / dinheiro', investimento: 'Conta investimento', outro: 'Outro' };
-const PALETTE = ['#7267ef', '#9a93f4', '#b9b4f8', '#5b52d6', '#17c666', '#3ec9d6', '#ffa21d', '#ea4d4d', '#6b7280'];
+const PALETTE = ['#c4161c', '#e05a5f', '#f0a3a6', '#8e0f14', '#17c666', '#3ec9d6', '#ffa21d', '#6b7280', '#1c232f'];
 
 /* ---------- Navegação ---------- */
 const NAV = [
@@ -465,7 +465,7 @@ ROUTES.dashboard = {
     chart($('#chFlow'), {
       chart: { type: 'line', height: 330, toolbar: { show: true, tools: { download: false } }, zoom: { enabled: true } },
       series: [{ name: 'Despesas', type: 'column', data: series.map((x) => x.desp) }, { name: 'Receitas', type: 'line', data: series.map((x) => x.rec) }],
-      colors: ['#7267ef', '#b3adf7'], stroke: { width: [0, 2.5], curve: 'smooth' },
+      colors: ['#c4161c', '#e8a3a6'], stroke: { width: [0, 2.5], curve: 'smooth' },
       plotOptions: { bar: { columnWidth: '48%' } },
       xaxis: { categories: months.map((x) => monthName(x).replace(' ', '/')), labels: { style: { fontSize: '11px' } } },
       yaxis: { labels: { formatter: (v) => moneyShort(v) } }, legend: { position: 'bottom', fontSize: '12px' },
@@ -473,14 +473,14 @@ ROUTES.dashboard = {
     const rates = months.map((x) => { const t = Calc.monthTotals(x); return t.rec ? round2(t.res / t.rec * 100) : 0; });
     chart($('#chRate'), {
       chart: { type: 'area', height: 100, sparkline: { enabled: true } }, series: [{ name: 'Economia', data: rates }],
-      colors: ['#7267ef'], stroke: { width: 2, curve: 'smooth' }, fill: { type: 'gradient', gradient: { opacityFrom: .45, opacityTo: .05 } },
+      colors: ['#c4161c'], stroke: { width: 2, curve: 'smooth' }, fill: { type: 'gradient', gradient: { opacityFrom: .45, opacityTo: .05 } },
       tooltip: { y: { formatter: (v) => pct(v) }, x: { show: false } }, xaxis: { categories: months.map((x) => monthName(x)) },
     });
     const days = new Date(Number(m.slice(0, 4)), Number(m.slice(5)), 0).getDate();
     const daily = Array.from({ length: days }, (_, i) => round2(S().tx.filter((t) => t.type === 'despesa' && !t.cardPayment && t.date === `${m}-${pad(i + 1)}`).reduce((s, t) => s + t.amount, 0)));
     chart($('#chDaily'), {
       chart: { type: 'bar', height: 92, sparkline: { enabled: true } }, series: [{ name: 'Despesas', data: daily }],
-      colors: ['#7267ef'], plotOptions: { bar: { columnWidth: '60%' } }, xaxis: { categories: daily.map((_, i) => `Dia ${i + 1}`) },
+      colors: ['#c4161c'], plotOptions: { bar: { columnWidth: '60%' } }, xaxis: { categories: daily.map((_, i) => `Dia ${i + 1}`) },
     });
     const cats = Calc.byCategory(m, 'despesa');
     if (!cats.length) { $('#chCat').innerHTML = emptyBox('Sem despesas neste mês.', 'pie-chart'); return; }
@@ -746,7 +746,7 @@ function cardForm(c = {}) {
     ${field('Conta de pagamento', `<select class="input" name="accountId">${optList(S().accounts, c.accountId)}</select>`)}
     ${field('Dia de fechamento', `<input class="input" name="closeDay" type="number" min="1" max="31" required value="${c.closeDay ?? 1}">`)}
     ${field('Dia de vencimento', `<input class="input" name="dueDay" type="number" min="1" max="31" required value="${c.dueDay ?? 10}">`)}
-    ${field('Cor', `<input class="input" name="color" type="color" value="${c.color || '#7267ef'}" style="height:40px;padding:4px">`)}
+    ${field('Cor', `<input class="input" name="color" type="color" value="${c.color || '#c4161c'}" style="height:40px;padding:4px">`)}
   </div>`, {
     extra: c.id ? `<button type="button" class="btn btn-danger" id="delCard" style="margin-right:auto">Excluir</button>` : '',
     onSave: (d) => { Store.upsert('cards', { ...c, name: d.name, limit: num(d.limit), accountId: d.accountId, closeDay: Number(d.closeDay), dueDay: Number(d.dueDay), color: d.color }); toast('Cartão salvo'); },
@@ -922,7 +922,7 @@ ROUTES.orcamento = {
     chart($('#chBud'), {
       chart: { type: 'bar', height: Math.max(220, rows.length * 52) }, plotOptions: { bar: { horizontal: true, barHeight: '60%' } },
       series: [{ name: 'Orçado', data: rows.map((r) => Number(r.b.amount)) }, { name: 'Realizado', data: rows.map((r) => Calc.spentInCategory(r.c.id, app.month)) }],
-      colors: ['#d6d3fb', '#7267ef'], xaxis: { categories: rows.map((r) => r.c.name), labels: { formatter: (v) => moneyShort(v) } }, legend: { position: 'bottom' },
+      colors: ['#f3cfd1', '#c4161c'], xaxis: { categories: rows.map((r) => r.c.name), labels: { formatter: (v) => moneyShort(v) } }, legend: { position: 'bottom' },
     });
   },
 };
@@ -982,7 +982,7 @@ function goalForm(g = {}) {
     ${field('Valor alvo (R$)', `<input class="input" name="target" required inputmode="decimal" value="${g.target ?? ''}">`)}
     ${field('Já guardado (R$)', `<input class="input" name="saved" inputmode="decimal" value="${g.saved ?? 0}">`)}
     ${field('Prazo', `<input class="input" type="date" name="deadline" value="${g.deadline || ''}">`)}
-    ${field('Cor', `<input class="input" type="color" name="color" value="${g.color || '#7267ef'}" style="height:40px;padding:4px">`)}
+    ${field('Cor', `<input class="input" type="color" name="color" value="${g.color || '#c4161c'}" style="height:40px;padding:4px">`)}
   </div>`, { onSave: (d) => { Store.upsert('goals', { ...g, name: d.name, target: num(d.target), saved: num(d.saved), deadline: d.deadline, color: d.color }); toast('Meta salva'); } });
 }
 
@@ -1074,7 +1074,7 @@ ROUTES.patrimonio = {
     const months = Array.from({ length: 12 }, (_, i) => addYm(ym(todayStr()), i - 11));
     chart($('#chNw'), {
       chart: { type: 'area', height: 340 }, series: [{ name: 'Saldo', data: months.map((m) => Calc.totalBalance(`${m}-31`)) }],
-      colors: ['#7267ef'], stroke: { curve: 'smooth', width: 2.5 }, fill: { type: 'gradient', gradient: { opacityFrom: .4, opacityTo: .05 } },
+      colors: ['#c4161c'], stroke: { curve: 'smooth', width: 2.5 }, fill: { type: 'gradient', gradient: { opacityFrom: .4, opacityTo: .05 } },
       xaxis: { categories: months.map((m) => monthName(m)) }, yaxis: { labels: { formatter: (v) => moneyShort(v) } },
     });
   },
@@ -1136,7 +1136,7 @@ ROUTES.relatorios = {
       <div class="table-wrap" style="padding:16px 0"><table class="tbl" style="font-size:12.5px"><thead><tr><th>Conta</th>${months.map((m) => `<th class="num">${monthName(m).split(' ')[0]}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody>
       <tr><td colspan="14"><b>Receitas operacionais</b></td></tr>
       ${rec.map((x) => row('&nbsp;&nbsp;' + esc(x.c.name), x.v)).join('')}
-      ${row('<b>(=) Receita total</b>', tR, 'background:#f6f5fe;font-weight:600', 'pos')}
+      ${row('<b>(=) Receita total</b>', tR, 'background:#f6f7fb;font-weight:600', 'pos')}
       <tr><td colspan="14"><b>Despesas</b></td></tr>
       ${desp.map((x) => row('&nbsp;&nbsp;' + esc(x.c.name), x.v)).join('')}
       ${row('<b>(−) Despesa total</b>', tD, 'background:#fdf3f3;font-weight:600', 'neg')}
@@ -1199,15 +1199,15 @@ ROUTES.relatorios = {
     }
     if (tab === 'fluxo') {
       const months = Array.from({ length: 12 }, (_, i) => addYm(app.month, i - 11)), t = months.map((m) => Calc.monthTotals(m));
-      chart($('#chRepF'), { chart: { type: 'bar', height: 300 }, series: [{ name: 'Receitas', data: t.map((x) => x.rec) }, { name: 'Despesas', data: t.map((x) => x.desp) }], colors: ['#b3adf7', '#7267ef'], plotOptions: { bar: { columnWidth: '55%' } }, xaxis: { categories: months.map((m) => monthName(m)) }, yaxis: { labels: { formatter: moneyShort } }, legend: { position: 'bottom' } });
+      chart($('#chRepF'), { chart: { type: 'bar', height: 300 }, series: [{ name: 'Receitas', data: t.map((x) => x.rec) }, { name: 'Despesas', data: t.map((x) => x.desp) }], colors: ['#e8a3a6', '#c4161c'], plotOptions: { bar: { columnWidth: '55%' } }, xaxis: { categories: months.map((m) => monthName(m)) }, yaxis: { labels: { formatter: moneyShort } }, legend: { position: 'bottom' } });
     }
     if (tab === 'centros') {
       const rows = this.csv.slice(1);
-      chart($('#chRepC'), { chart: { type: 'bar', height: 260 }, series: [{ name: 'Receitas', data: rows.map((r) => round2(r[1])) }, { name: 'Despesas', data: rows.map((r) => round2(r[2])) }], colors: ['#b3adf7', '#7267ef'], xaxis: { categories: rows.map((r) => r[0]) }, yaxis: { labels: { formatter: moneyShort } }, legend: { position: 'bottom' } });
+      chart($('#chRepC'), { chart: { type: 'bar', height: 260 }, series: [{ name: 'Receitas', data: rows.map((r) => round2(r[1])) }, { name: 'Despesas', data: rows.map((r) => round2(r[2])) }], colors: ['#e8a3a6', '#c4161c'], xaxis: { categories: rows.map((r) => r[0]) }, yaxis: { labels: { formatter: moneyShort } }, legend: { position: 'bottom' } });
     }
     if (tab === 'projecao') {
       const rows = this.csv.slice(1);
-      chart($('#chRepP'), { chart: { type: 'line', height: 280 }, series: [{ name: 'Entradas', type: 'column', data: rows.map((r) => r[1]) }, { name: 'Saídas', type: 'column', data: rows.map((r) => r[2]) }, { name: 'Saldo projetado', type: 'line', data: rows.map((r) => r[3]) }], colors: ['#b3adf7', '#7267ef', '#1c232f'], stroke: { width: [0, 0, 3], curve: 'smooth' }, xaxis: { categories: rows.map((r) => monthName(r[0])) }, yaxis: { labels: { formatter: moneyShort } }, legend: { position: 'bottom' } });
+      chart($('#chRepP'), { chart: { type: 'line', height: 280 }, series: [{ name: 'Entradas', type: 'column', data: rows.map((r) => r[1]) }, { name: 'Saídas', type: 'column', data: rows.map((r) => r[2]) }, { name: 'Saldo projetado', type: 'line', data: rows.map((r) => r[3]) }], colors: ['#e8a3a6', '#c4161c', '#1c232f'], stroke: { width: [0, 0, 3], curve: 'smooth' }, xaxis: { categories: rows.map((r) => monthName(r[0])) }, yaxis: { labels: { formatter: moneyShort } }, legend: { position: 'bottom' } });
       $$('#scen button').forEach((b) => b.onclick = () => { app.sub.scen = { r: Number(b.dataset.r), d: Number(b.dataset.d) }; refresh(); });
       $('#scR').onchange = (e) => { app.sub.scen.r = Number(e.target.value) || 0; refresh(); };
       $('#scD').onchange = (e) => { app.sub.scen.d = Number(e.target.value) || 0; refresh(); };
@@ -1282,7 +1282,7 @@ ROUTES.contas = {
       ${field('Nome', `<input class="input" name="name" required value="${esc(a.name)}">`, 'full')}
       ${field('Tipo', `<select class="input" name="type">${Object.entries(ACC_TYPES).map(([k, v]) => `<option value="${k}" ${a.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select>`)}
       ${field('Saldo inicial (R$)', `<input class="input" name="initial" inputmode="decimal" value="${a.initial ?? 0}">`)}
-      ${field('Cor', `<input class="input" type="color" name="color" value="${a.color || '#7267ef'}" style="height:40px;padding:4px">`)}
+      ${field('Cor', `<input class="input" type="color" name="color" value="${a.color || '#c4161c'}" style="height:40px;padding:4px">`)}
       <label class="check" style="align-self:end"><input type="checkbox" name="archived" ${a.archived ? 'checked' : ''}> Arquivar conta</label>
     </div>`, { onSave: (d) => { Store.upsert('accounts', { ...a, ...d, initial: num(d.initial) }); toast('Conta salva'); } });
     $('#newAcc').onclick = () => form();
@@ -1312,7 +1312,7 @@ ROUTES.categorias = {
     const form = (c = {}) => modal(c.id ? 'Editar categoria' : 'Nova categoria', `<div class="form-grid">
       ${field('Nome', `<input class="input" name="name" required value="${esc(c.name)}">`, 'full')}
       ${field('Categoria pai', `<select class="input" name="parentId"><option value="">— Nenhuma (principal) —</option>${S().categories.filter((x) => x.type === c.type && !x.parentId && x.id !== c.id).map((x) => `<option value="${x.id}" ${x.id === c.parentId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`)}
-      ${field('Cor', `<input class="input" type="color" name="color" value="${c.color || '#7267ef'}" style="height:40px;padding:4px">`)}
+      ${field('Cor', `<input class="input" type="color" name="color" value="${c.color || '#c4161c'}" style="height:40px;padding:4px">`)}
     </div>`, { onSave: (d) => { Store.upsert('categories', { ...c, name: d.name, parentId: d.parentId || null, color: d.color }); toast('Categoria salva'); } });
     $$('[data-new]').forEach((b) => b.onclick = () => form({ type: b.dataset.new }));
     $$('[data-sub]').forEach((b) => { const p = Store.get('categories', b.dataset.sub); b.onclick = () => form({ type: p.type, parentId: p.id, color: p.color }); });
