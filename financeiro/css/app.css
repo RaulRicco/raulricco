@@ -1,8 +1,8 @@
 :root {
-  --primary: #c4161c;
-  --primary-600: #a31217;
-  --primary-soft: #fbe8e9;
-  --primary-200: #e8a3a6;
+  --primary: #2563eb;
+  --primary-600: #1d4ed8;
+  --primary-soft: #e8effd;
+  --primary-200: #a9c2f7;
   --success: #17c666;
   --success-soft: #e3f8ec;
   --danger: #ea4d4d;
@@ -13,7 +13,7 @@
   --sidebar: #1c232f;
   --sidebar-2: #161c25;
   --sidebar-text: #a9b7d0;
-  --sidebar-label: #e05a5f;
+  --sidebar-label: #60a5fa;
   --bg: #f0f1f7;
   --card: #ffffff;
   --text: #1d2630;
@@ -188,7 +188,7 @@ svg.feather { width: 18px; height: 18px; stroke-width: 1.8; vertical-align: midd
 }
 .btn svg.feather { width: 15px; height: 15px; }
 .btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: var(--primary-600); box-shadow: 0 4px 12px rgba(196, 22, 28, .35); }
+.btn-primary:hover { background: var(--primary-600); box-shadow: 0 4px 12px rgba(37, 99, 235, .35); }
 .btn-light { background: #f0f1f5; color: #3d4652; }
 .btn-light:hover { background: #e5e6ee; }
 .btn-outline { background: #fff; border-color: var(--border); color: #3d4652; }
@@ -207,7 +207,7 @@ svg.feather { width: 18px; height: 18px; stroke-width: 1.8; vertical-align: midd
   width: 100%; border: 1px solid #dfe2ec; border-radius: 6px; padding: 9px 12px; font: inherit; font-size: 13.5px;
   background: #fff; color: var(--text); outline: none; transition: border .15s, box-shadow .15s;
 }
-.input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(196, 22, 28, .15); }
+.input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, .15); }
 textarea.input { resize: vertical; min-height: 70px; }
 .check { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
 .check input { accent-color: var(--primary); width: 16px; height: 16px; }
@@ -265,7 +265,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tile .row { display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; }
 .cc-card {
   border-radius: 12px; padding: 20px; color: #fff; min-height: 150px; display: flex; flex-direction: column; justify-content: space-between;
-  background: linear-gradient(135deg, var(--c, #c4161c), #1c232f);
+  background: linear-gradient(135deg, var(--c, #2563eb), #1c232f);
 }
 .cc-card .chip { font-size: 12px; opacity: .85; }
 .cc-card .nm { font-size: 17px; font-weight: 600; }
