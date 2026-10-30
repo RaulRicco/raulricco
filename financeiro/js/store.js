@@ -244,13 +244,29 @@ const Calc = {
   invoicePayment(cardId, invYm) {
     return Store.state.tx.find((t) => t.cardPayment && t.cardId === cardId && t.invoice === invYm);
   },
-  cardUsed(cardId) {
-    // limite usado = soma das faturas não pagas
+  /** Conta fixa (recorrente ou "fixo por X meses") ainda não cobrada: não consome o limite antes da data. Parcelas consomem tudo na compra. */
+  isScheduledCharge(t) {
+    const fixed = t.recurrenceId || (t.groupId && !/\(\d+\/\d+\)$/.test(t.desc));
+    return Boolean(fixed) && t.date > todayStr();
+  },
+  /** Itens das faturas não pagas do cartão. */
+  openCardItems(cardId) {
     const card = Store.get('cards', cardId);
-    const months = new Set(Store.state.tx.filter((t) => t.cardId === cardId && !t.cardPayment).map((t) => this.invoiceOf(card, t.date)));
-    let used = 0;
-    months.forEach((m) => { const p = this.invoicePayment(cardId, m); if (!p || !p.paid) used += this.invoiceTotal(cardId, m); });
-    return round2(used);
+    if (!card) return [];
+    const open = {};
+    return Store.state.tx.filter((t) => {
+      if (t.cardId !== cardId || t.cardPayment) return false;
+      const m = this.invoiceOf(card, t.date);
+      if (!(m in open)) { const p = this.invoicePayment(cardId, m); open[m] = !p || !p.paid; }
+      return open[m];
+    });
+  },
+  cardUsed(cardId) {
+    // limite usado = faturas não pagas, sem as contas fixas que ainda não chegaram na data de cobrança
+    return round2(this.openCardItems(cardId).filter((t) => !this.isScheduledCharge(t)).reduce((s, t) => s + (t.type === 'receita' ? -t.amount : t.amount), 0));
+  },
+  cardScheduled(cardId) {
+    return round2(this.openCardItems(cardId).filter((t) => this.isScheduledCharge(t)).reduce((s, t) => s + (t.type === 'receita' ? -t.amount : t.amount), 0));
   },
 
   accountBalance(accId, until) {

@@ -712,7 +712,7 @@ ROUTES.cartoes = {
     }
     return head('Cartões de crédito', 'Limites, faturas e compras parceladas', `${card ? `<button class="btn btn-outline" id="newPurchase">${ic('shopping-cart')}Nova compra</button>` : ''}<button class="btn btn-primary" id="newCard">${ic('plus')}Novo cartão</button>`) + `
       <div class="grid g-3" style="margin-bottom:24px">
-        ${cards.map((c) => { const used = Calc.cardUsed(c.id); const p = c.limit ? Math.min(100, used / c.limit * 100) : 0; return `
+        ${cards.map((c) => { const used = Calc.cardUsed(c.id), sched = Calc.cardScheduled(c.id); const p = c.limit ? Math.min(100, used / c.limit * 100) : 0; return `
           <div class="card" style="cursor:pointer;outline:${c.id === app.sub.card ? '2px solid var(--primary)' : 'none'}" data-card="${c.id}">
             <div class="tile">
               <div class="cc-card" style="--c:${c.color}"><div style="display:flex;justify-content:space-between"><span class="chip">Fecha dia ${c.closeDay} · vence dia ${c.dueDay}</span>
@@ -721,6 +721,7 @@ ROUTES.cartoes = {
               <div class="row"><span class="muted">Usado</span><b>${money(used)}</b></div>
               <div class="progress ${p > 90 ? 'over' : p > 70 ? 'warn' : ''}" style="margin:8px 0"><div style="width:${p}%"></div></div>
               <div class="row" style="margin-top:0"><span class="muted">Disponível</span><b class="pos">${money(c.limit - used)}</b></div>
+              ${sched ? `<div class="row"><span class="muted">Fixos agendados (entram na data)</span><span class="muted">${money(sched)}</span></div>` : ''}
             </div>
           </div>`; }).join('') || `<div class="card" style="grid-column:1/-1">${emptyBox('Nenhum cartão cadastrado ainda.', 'credit-card')}</div>`}
       </div>${invoiceHtml}`;
