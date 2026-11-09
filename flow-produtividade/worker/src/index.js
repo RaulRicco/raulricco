@@ -1,8 +1,9 @@
 import { verifyJWT, handleRegister, handleLogin, handleGoogleStart, handleGoogleCallback } from './auth.js';
 import { handleGetTasks, handleCreateTask, handleUpdateTask, handleDeleteTask } from './tasks.js';
-import { handleGetSessions, handleCreateSession } from './sessions.js';
+import { handleGetSessions, handleCreateSession, handleUpdateSession } from './sessions.js';
 import { handleGetGoals, handleCreateGoal, handleUpdateGoal, handleDeleteGoal } from './goals.js';
-import { getStats } from './db.js';
+import { handleGetAreas, handleCreateArea, handleUpdateArea } from './areas.js';
+import { getStats, getAnalytics, getReview, upsertReview } from './db.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -14,7 +15,7 @@ function json(data, status = 200) {
 function cors(response, origin) {
   const headers = new Headers(response.headers);
   headers.set('Access-Control-Allow-Origin', origin || '*');
-  headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return new Response(response.body, { status: response.status, headers });
 }
@@ -73,6 +74,31 @@ export default {
           if (method === 'GET') response = await handleGetSessions(request, env, userId);
           else if (method === 'POST') response = await handleCreateSession(request, env, userId);
           else response = json({ error: 'Método não permitido' }, 405);
+        } else if (path.startsWith('/sessions/')) {
+          const sessionId = path.slice(10);
+          if (method === 'PATCH') response = await handleUpdateSession(request, env, userId, sessionId);
+          else response = json({ error: 'Método não permitido' }, 405);
+        } else if (path === '/reviews') {
+          const date = url.searchParams.get('date');
+          if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) response = json({ error: 'date inválida' }, 400);
+          else if (method === 'GET') response = json(await getReview(env.DB, userId, date) || null);
+          else if (method === 'PUT') {
+            let body;
+            try { body = await request.json(); } catch { body = null; }
+            response = body ? json(await upsertReview(env.DB, userId, date, body)) : json({ error: 'JSON inválido' }, 400);
+          } else response = json({ error: 'Método não permitido' }, 405);
+        } else if (path === '/areas') {
+          if (method === 'GET') response = await handleGetAreas(request, env, userId);
+          else if (method === 'POST') response = await handleCreateArea(request, env, userId);
+          else response = json({ error: 'Método não permitido' }, 405);
+        } else if (path.startsWith('/areas/')) {
+          const areaId = decodeURIComponent(path.slice(7));
+          if (method === 'PATCH') response = await handleUpdateArea(request, env, userId, areaId);
+          else response = json({ error: 'Método não permitido' }, 405);
+        } else if (path === '/analytics') {
+          const since = url.searchParams.get('since');
+          if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since)) response = json({ error: 'since inválido' }, 400);
+          else response = json(await getAnalytics(env.DB, userId, since));
         } else if (path === '/goals') {
           if (method === 'GET') response = await handleGetGoals(request, env, userId);
           else if (method === 'POST') response = await handleCreateGoal(request, env, userId);

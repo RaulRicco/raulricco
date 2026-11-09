@@ -17,6 +17,12 @@ function periodDates(period) {
     end.setDate(start.getDate() + 6);
     return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
   }
+  if (period === 'quarterly') {
+    const q = Math.floor(now.getMonth() / 3);
+    const start = new Date(now.getFullYear(), q * 3, 1);
+    const end = new Date(now.getFullYear(), q * 3 + 3, 0);
+    return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+  }
   // monthly
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -32,11 +38,11 @@ export async function handleCreateGoal(request, env, userId) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'JSON inválido' }, 400); }
 
-  const { title, period, target_value } = body;
+  const { title, period, target_value, area } = body;
   if (!title || !title.trim()) return json({ error: 'title é obrigatório' }, 400);
 
-  const validPeriods = ['weekly', 'monthly'];
-  if (!validPeriods.includes(period)) return json({ error: 'period deve ser weekly ou monthly' }, 400);
+  const validPeriods = ['weekly', 'monthly', 'quarterly'];
+  if (!validPeriods.includes(period)) return json({ error: 'period deve ser weekly, monthly ou quarterly' }, 400);
 
   const { start, end } = periodDates(period);
 
@@ -47,7 +53,8 @@ export async function handleCreateGoal(request, env, userId) {
     period,
     targetValue: target_value || 100,
     startDate: start,
-    endDate: end
+    endDate: end,
+    area: (typeof area === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(area)) ? area : 'work'
   });
   return json(goal, 201);
 }

@@ -18,7 +18,7 @@ export async function handleCreateTask(request, env, userId) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'JSON inválido' }, 400); }
 
-  const { text, priority, date } = body;
+  const { text, priority, date, area, important, urgent, is_mit, estimate } = body;
   if (!text || !text.trim()) return json({ error: 'text é obrigatório' }, 400);
 
   const valid = ['low', 'medium', 'high'];
@@ -27,7 +27,12 @@ export async function handleCreateTask(request, env, userId) {
     userId,
     text: text.trim(),
     priority: valid.includes(priority) ? priority : 'low',
-    date: date || today()
+    date: date || today(),
+    area: (typeof area === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(area)) ? area : 'work',
+    important: important === undefined ? true : !!important,
+    urgent: !!urgent,
+    isMit: !!is_mit,
+    estimate: Math.max(1, Math.min(12, parseInt(estimate) || 1))
   });
   return json(task, 201);
 }

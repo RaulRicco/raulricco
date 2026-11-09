@@ -1,233 +1,298 @@
-function initTimer(API, token) {
-    const timerEl = document.getElementById('timer');
-    const labelEl = document.getElementById('timer-label');
-    const startBtn = document.getElementById('start-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const settingsBtn = document.getElementById('settings-btn');
-    const sessionsCountEl = document.getElementById('sessions-count');
-    const sessionsProgress = document.getElementById('sessions-progress');
-    const circleEl = document.getElementById('pomodoro-circle');
-
-    const settingsModal = document.getElementById('settings-modal');
-    const closeSettingsBtn = document.getElementById('close-settings');
-    const applySettingsBtn = document.getElementById('apply-settings');
-
-    const focusTimeInput = document.getElementById('focus-time');
-    const shortBreakInput = document.getElementById('short-break');
-    const longBreakInput = document.getElementById('long-break');
-    const sessionsInput = document.getElementById('sessions-count-input');
-    const focusDisplay = document.getElementById('focus-time-display');
-    const shortDisplay = document.getElementById('short-break-display');
-    const longDisplay = document.getElementById('long-break-display');
-    const sessionsDisplay = document.getElementById('sessions-display');
-
+// Timer Pomodoro / Deep Work — sessão vinculada a uma tarefa, com avaliação da qualidade do foco
+function initTimer(API) {
+    const $ = id => document.getElementById(id);
+    const timerEl = $('timer'), labelEl = $('timer-label'), startBtn = $('start-btn');
+    const ring = $('timer-ring-progress');
+    const taskSelect = $('timer-task');
+    const areaSelect = $('timer-area');
+    const stopBtn = $('stop-btn');
+    const qualityBox = $('quality-box');
     const PAGE_TITLE = 'Flow Produtividade';
+    const RING_LEN = 2 * Math.PI * 108;
 
-    let settings = JSON.parse(localStorage.getItem('flow_timer_settings') || 'null') || {
-        focusTime: 25, shortBreak: 5, longBreak: 15, sessionsCount: 8
-    };
-
-    let intervalId = null;
-    let isRunning = false;
-    let timeLeft = settings.focusTime * 60;
-    let sessionsToday = 0;
+    let settings = getSettings();
+    let isRunning = false, intervalId = null;
     let currentMode = 'focus';
+    let timeLeft = settings.focusTime * 60;
+    let endAt = null;
+    let focusToday = 0;
+    let lastSessionId = null;
 
-    function modeLabel(mode) {
-        return { focus: 'Sessão de Foco', shortBreak: 'Intervalo Curto', longBreak: 'Intervalo Longo' }[mode];
+    // Cronômetro (contador livre) — persiste no navegador para sobreviver a recarregamentos
+    const SW_KEY = 'flow_stopwatch';
+    let sw = loadSw();
+    function loadSw() {
+        try { return JSON.parse(localStorage.getItem(SW_KEY) || 'null') || { startAt: null, accMs: 0 }; } catch (e) { return { startAt: null, accMs: 0 }; }
+    }
+    function persistSw() { try { localStorage.setItem(SW_KEY, JSON.stringify(sw)); } catch (e) {} }
+    const swElapsed = () => sw.accMs + (sw.startAt ? Date.now() - sw.startAt : 0);
+    function fmtClock(ms) {
+        const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+        return (h ? `${h}:${String(m).padStart(2, '0')}` : String(m).padStart(2, '0')) + `:${String(s).padStart(2, '0')}`;
     }
 
-    function modeEmoji(mode) {
-        return mode === 'focus' ? '🎯' : '☕';
-    }
+    const modeLabel = m => ({ focus: 'Deep Work', shortBreak: 'Pausa curta', longBreak: 'Pausa longa', stopwatch: 'Cronômetro' }[m]);
+    const modeTotal = m => (m === 'focus' ? settings.focusTime : m === 'shortBreak' ? settings.shortBreak : settings.longBreak) * 60;
 
     function updateDisplay() {
+        document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+        stopBtn.style.display = currentMode === 'stopwatch' ? '' : 'none';
+        $('skip-btn').style.display = currentMode === 'stopwatch' ? 'none' : '';
+        if (currentMode === 'stopwatch') {
+            const ms = swElapsed();
+            timerEl.textContent = fmtClock(ms);
+            labelEl.textContent = sw.startAt ? 'Contando…' : ms ? 'Pausado' : 'Cronômetro';
+            document.title = sw.startAt ? `${fmtClock(ms)} ⏱ — ${PAGE_TITLE}` : PAGE_TITLE;
+            ring.style.strokeDasharray = RING_LEN;
+            ring.style.strokeDashoffset = RING_LEN * (1 - (ms % 3600000) / 3600000);
+            ring.style.stroke = 'var(--violet)';
+            startBtn.innerHTML = sw.startAt ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+            return;
+        }
         const mm = String(Math.floor(timeLeft / 60)).padStart(2, '0');
         const ss = String(timeLeft % 60).padStart(2, '0');
         timerEl.textContent = `${mm}:${ss}`;
         labelEl.textContent = modeLabel(currentMode);
+        document.title = isRunning ? `${mm}:${ss} ${currentMode === 'focus' ? '🎯' : '☕'} — ${PAGE_TITLE}` : PAGE_TITLE;
+        const pct = 1 - timeLeft / modeTotal(currentMode);
+        ring.style.strokeDasharray = RING_LEN;
+        ring.style.strokeDashoffset = RING_LEN * (1 - pct);
+        ring.style.stroke = currentMode === 'focus' ? 'var(--accent)' : 'var(--good)';
+        document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+        startBtn.innerHTML = isRunning ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    }
 
-        // Título da aba
-        if (isRunning) {
-            document.title = `${mm}:${ss} ${modeEmoji(currentMode)} — ${PAGE_TITLE}`;
-        } else {
-            document.title = PAGE_TITLE;
-        }
-
-        // Círculo de progresso
-        const totalTime = currentMode === 'focus'
-            ? settings.focusTime * 60
-            : currentMode === 'shortBreak'
-                ? settings.shortBreak * 60
-                : settings.longBreak * 60;
-        const pct = 100 - (timeLeft / totalTime * 100);
-        circleEl.style.background = `conic-gradient(var(--accent) ${pct}%, transparent ${pct}%)`;
+    function updateSessionsUI() {
+        $('sessions-count').textContent = `${focusToday}/${settings.sessionsCount}`;
+        $('sessions-progress').style.width = `${Math.min(focusToday / settings.sessionsCount * 100, 100)}%`;
     }
 
     function playSound() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             [0, 0.35, 0.7].forEach(delay => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.value = 880;
-                osc.type = 'sine';
+                const osc = ctx.createOscillator(), gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 880; osc.type = 'sine';
                 gain.gain.setValueAtTime(0.35, ctx.currentTime + delay);
                 gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.4);
-                osc.start(ctx.currentTime + delay);
-                osc.stop(ctx.currentTime + delay + 0.4);
+                osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.4);
             });
-        } catch (e) {
-            // AudioContext não disponível — silêncio
-        }
-    }
-
-    async function saveSession(mode) {
-        const duration = mode === 'focus'
-            ? settings.focusTime
-            : mode === 'shortBreak'
-                ? settings.shortBreak
-                : settings.longBreak;
-        try {
-            await apiRequest(`${API}/sessions`, {
-                method: 'POST',
-                body: JSON.stringify({ mode, duration_minutes: duration, date: brDate() })
-            });
-        } catch (e) {
-            // Não bloqueia o timer por falha de rede
-        }
-    }
-
-    function updateSessionsUI() {
-        sessionsCountEl.textContent = `${sessionsToday}/${settings.sessionsCount}`;
-        sessionsProgress.style.width = `${Math.min((sessionsToday / settings.sessionsCount) * 100, 100)}%`;
-        document.getElementById('stat-sessions').textContent = sessionsToday;
-        const focusMinutes = sessionsToday * settings.focusTime;
-        const h = Math.floor(focusMinutes / 60);
-        const m = focusMinutes % 60;
-        document.getElementById('stat-focus-time').textContent = `${h}h ${m}m`;
-    }
-
-    function onSessionComplete() {
-        playSound();
-
-        if (currentMode === 'focus') {
-            sessionsToday++;
-            updateSessionsUI();
-            saveSession('focus');
-            currentMode = sessionsToday % 4 === 0 ? 'longBreak' : 'shortBreak';
-            timeLeft = currentMode === 'longBreak' ? settings.longBreak * 60 : settings.shortBreak * 60;
-        } else {
-            saveSession(currentMode);
-            currentMode = 'focus';
-            timeLeft = settings.focusTime * 60;
-        }
-
-        updateDisplay();
-        startBtn.innerHTML = '<i class="fas fa-play"></i>';
-        isRunning = false;
-        document.title = PAGE_TITLE;
-    }
-
-    function startTimer() {
-        if (isRunning) {
-            clearInterval(intervalId);
-            isRunning = false;
-            startBtn.innerHTML = '<i class="fas fa-play"></i>';
-            document.title = PAGE_TITLE;
-        } else {
-            isRunning = true;
-            startBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            intervalId = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    updateDisplay();
-                } else {
-                    clearInterval(intervalId);
-                    onSessionComplete();
-                }
-            }, 1000);
-        }
-    }
-
-    function resetTimer() {
-        clearInterval(intervalId);
-        isRunning = false;
-        currentMode = 'focus';
-        timeLeft = settings.focusTime * 60;
-        updateDisplay();
-        startBtn.innerHTML = '<i class="fas fa-play"></i>';
-        document.title = PAGE_TITLE;
-    }
-
-    startBtn.addEventListener('click', startTimer);
-    resetBtn.addEventListener('click', resetTimer);
-
-    // Slider sync
-    focusTimeInput.addEventListener('input', () => { focusDisplay.textContent = `${focusTimeInput.value} min`; });
-    shortBreakInput.addEventListener('input', () => { shortDisplay.textContent = `${shortBreakInput.value} min`; });
-    longBreakInput.addEventListener('input', () => { longDisplay.textContent = `${longBreakInput.value} min`; });
-    sessionsInput.addEventListener('input', () => { sessionsDisplay.textContent = sessionsInput.value; });
-
-    settingsBtn.addEventListener('click', () => {
-        focusTimeInput.value = settings.focusTime;
-        shortBreakInput.value = settings.shortBreak;
-        longBreakInput.value = settings.longBreak;
-        sessionsInput.value = settings.sessionsCount;
-        focusDisplay.textContent = `${settings.focusTime} min`;
-        shortDisplay.textContent = `${settings.shortBreak} min`;
-        longDisplay.textContent = `${settings.longBreak} min`;
-        sessionsDisplay.textContent = settings.sessionsCount;
-        settingsModal.classList.add('active');
-    });
-
-    closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
-    settingsModal.addEventListener('click', e => { if (e.target === settingsModal) settingsModal.classList.remove('active'); });
-
-    applySettingsBtn.addEventListener('click', () => {
-        settings.focusTime = parseInt(focusTimeInput.value);
-        settings.shortBreak = parseInt(shortBreakInput.value);
-        settings.longBreak = parseInt(longBreakInput.value);
-        settings.sessionsCount = parseInt(sessionsInput.value);
-        localStorage.setItem('flow_timer_settings', JSON.stringify(settings));
-        updateSessionsUI();
-        resetTimer();
-        settingsModal.classList.remove('active');
-    });
-
-    // Carregar sessões do dia já registradas
-    async function loadTodaySessions() {
-        try {
-            const res = await apiRequest(`${API}/sessions?date=${brDate()}`);
-            if (res && res.ok) {
-                const sessions = await res.json();
-                sessionsToday = sessions.filter(s => s.mode === 'focus').length;
-                updateSessionsUI();
-            }
         } catch (e) {}
     }
 
-    loadTodaySessions();
-    updateDisplay();
-    updateSessionsUI();
-
-    // Botão de reset do dia — zera contador e reinicia timer
-    const resetDayBtn = document.getElementById('reset-day-btn');
-    if (resetDayBtn) {
-        resetDayBtn.addEventListener('click', () => {
-            sessionsToday = 0;
-            resetTimer();
-            updateSessionsUI();
-        });
+    function notify(text) {
+        try {
+            if ('Notification' in window && Notification.permission === 'granted') new Notification(PAGE_TITLE, { body: text });
+        } catch (e) {}
     }
 
-    window._resetTimer = () => {
-        sessionsToday = 0;
-        resetTimer();
+    async function saveSession(mode, minutes) {
+        const taskId = mode === 'focus' ? (taskSelect.value || null) : null;
+        const task = taskId && window.FlowTasks ? window.FlowTasks.get().find(t => t.id === taskId) : null;
+        const area = mode === 'focus' ? (task && task.area ? task.area : areaSelect.value || null) : null;
+        try {
+            const res = await apiRequest(`${API}/sessions`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    mode, duration_minutes: minutes || Math.round(modeTotal(mode) / 60), date: brDate(),
+                    task_id: taskId, area,
+                })
+            });
+            if (res && res.ok) {
+                const s = await res.json();
+                if (mode === 'focus') lastSessionId = s.id;
+            }
+        } catch (e) {}
+        document.dispatchEvent(new CustomEvent('flow:session-logged', { detail: { mode } }));
+    }
+
+    function showQuality() {
+        qualityBox.classList.add('show');
+        qualityBox.querySelectorAll('[data-q]').forEach(b => b.classList.remove('on'));
+    }
+
+    qualityBox.querySelectorAll('[data-q]').forEach(btn => btn.addEventListener('click', async () => {
+        qualityBox.querySelectorAll('[data-q]').forEach(b => b.classList.toggle('on', b === btn));
+        if (!lastSessionId) { qualityBox.classList.remove('show'); return; }
+        try {
+            await apiRequest(`${API}/sessions/${lastSessionId}`, {
+                method: 'PATCH', body: JSON.stringify({ focus_quality: parseInt(btn.dataset.q) })
+            });
+        } catch (e) {}
+        setTimeout(() => qualityBox.classList.remove('show'), 500);
+        document.dispatchEvent(new CustomEvent('flow:session-logged', { detail: { mode: 'rating' } }));
+    }));
+    $('quality-skip').addEventListener('click', () => qualityBox.classList.remove('show'));
+
+    function onSessionComplete() {
+        clearInterval(intervalId);
+        isRunning = false;
+        endAt = null;
+        playSound();
+        if (currentMode === 'focus') {
+            focusToday++;
+            updateSessionsUI();
+            saveSession('focus');
+            showQuality();
+            notify('Sessão de foco concluída. Hora da pausa!');
+            currentMode = focusToday % 4 === 0 ? 'longBreak' : 'shortBreak';
+        } else {
+            saveSession(currentMode);
+            notify('Pausa encerrada. Bora focar!');
+            currentMode = 'focus';
+        }
+        timeLeft = modeTotal(currentMode);
+        updateDisplay();
+    }
+
+    function tick() {
+        timeLeft = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+        updateDisplay();
+        if (timeLeft <= 0) onSessionComplete();
+    }
+
+    function toggle() {
+        if (currentMode === 'stopwatch') {
+            if (sw.startAt) { sw.accMs = swElapsed(); sw.startAt = null; }
+            else sw.startAt = Date.now();
+            persistSw();
+            clearInterval(intervalId);
+            if (sw.startAt) intervalId = setInterval(updateDisplay, 500);
+            updateDisplay();
+            return;
+        }
+        if (isRunning) {
+            clearInterval(intervalId);
+            isRunning = false;
+            endAt = null;
+            updateDisplay();
+            return;
+        }
+        try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+        isRunning = true;
+        endAt = Date.now() + timeLeft * 1000;
+        intervalId = setInterval(tick, 250);
+        updateDisplay();
+    }
+
+    function setMode(mode) {
+        if (currentMode === 'stopwatch' && mode !== 'stopwatch' && swElapsed() > 0) {
+            toast('O cronômetro continua guardado — volte em “Cronômetro” para salvar.');
+        }
+        clearInterval(intervalId);
+        if (mode === 'stopwatch' && sw.startAt) intervalId = setInterval(updateDisplay, 500);
+        isRunning = false;
+        endAt = null;
+        currentMode = mode;
+        timeLeft = modeTotal(mode);
+        updateDisplay();
+    }
+
+    startBtn.addEventListener('click', toggle);
+    $('reset-btn').addEventListener('click', () => {
+        if (currentMode === 'stopwatch') {
+            if (swElapsed() > 60000 && !confirm('Descartar o tempo do cronômetro sem salvar?')) return;
+            sw = { startAt: null, accMs: 0 }; persistSw();
+        }
+        setMode(currentMode);
+    });
+    stopBtn.addEventListener('click', async () => {
+        const minutes = Math.round(swElapsed() / 60000);
+        if (minutes < 1) { toast('Menos de 1 minuto — nada para salvar ainda.'); return; }
+        if (!taskSelect.value && !areaSelect.value) { toast('Escolha uma área ou tarefa para lançar o tempo.'); areaSelect.focus(); return; }
+        sw = { startAt: null, accMs: 0 }; persistSw();
+        clearInterval(intervalId);
+        playSound();
+        await saveSession('focus', minutes);
+        focusToday++;
         updateSessionsUI();
-    };
+        showQuality();
+        toast(`${fmtMinutes(minutes)} lançados em ${areaInfo((window.FlowTasks?.get().find(t => t.id === taskSelect.value) || {}).area || areaSelect.value).name}.`);
+        updateDisplay();
+    });
+    $('skip-btn').addEventListener('click', () => setMode(currentMode === 'focus' ? 'shortBreak' : 'focus'));
+    document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+    // Lista de tarefas no seletor "Focando em"
+    function fillTaskSelect(tasks) {
+        const current = taskSelect.value;
+        const pending = tasks.filter(t => !t.completed);
+        const mits = pending.filter(t => t.is_mit), rest = pending.filter(t => !t.is_mit);
+        const opt = t => `<option value="${t.id}">${t.is_mit ? '★ ' : ''}${escapeHtml(t.text)}</option>`;
+        taskSelect.innerHTML = '<option value="">— Sem tarefa vinculada —</option>' +
+            (mits.length ? `<optgroup label="Big 3">${mits.map(opt).join('')}</optgroup>` : '') +
+            (rest.length ? `<optgroup label="Outras">${rest.map(opt).join('')}</optgroup>` : '');
+        if ([...taskSelect.options].some(o => o.value === current)) taskSelect.value = current;
+    }
+    document.addEventListener('flow:tasks-changed', e => fillTaskSelect(e.detail));
+    function fillAreaSelect() {
+        let cur = areaSelect.value;
+        try { cur = cur || sw.area || localStorage.getItem('flow_timer_area') || ''; } catch (e) {}
+        areaSelect.innerHTML = areaOptions(cur, { includeNone: true });
+        if ([...areaSelect.options].some(o => o.value === cur)) areaSelect.value = cur;
+    }
+    document.addEventListener('flow:areas-changed', fillAreaSelect);
+    areaSelect.addEventListener('change', () => {
+        sw.area = areaSelect.value; persistSw();
+        try { localStorage.setItem('flow_timer_area', areaSelect.value); } catch (e) {}
+    });
+    taskSelect.addEventListener('change', () => {
+        const t = window.FlowTasks?.get().find(x => x.id === taskSelect.value);
+        if (t && t.area) areaSelect.value = t.area;
+    });
+    document.addEventListener('flow:start-area', e => {
+        areaSelect.value = e.detail; sw.area = e.detail; persistSw();
+        taskSelect.value = '';
+        setMode('stopwatch');
+        if (!sw.startAt) toggle();
+    });
+    document.addEventListener('flow:focus-task', e => {
+        taskSelect.value = e.detail;
+        const t = window.FlowTasks?.get().find(x => x.id === e.detail);
+        if (t && t.area) areaSelect.value = t.area;
+        if (currentMode !== 'focus' && currentMode !== 'stopwatch') setMode('focus');
+    });
+
+    // Configurações
+    const modal = $('settings-modal');
+    const fields = [
+        ['focus-time', 'focusTime', v => `${v} min`],
+        ['short-break', 'shortBreak', v => `${v} min`],
+        ['long-break', 'longBreak', v => `${v} min`],
+        ['sessions-count-input', 'sessionsCount', v => v],
+        ['deep-hours', 'dailyDeepHours', v => `${v} h`],
+    ];
+    fields.forEach(([id, , fmt]) => $(id).addEventListener('input', () => { $(id + '-display').textContent = fmt($(id).value); }));
+    $('settings-btn').addEventListener('click', () => {
+        fields.forEach(([id, key, fmt]) => { $(id).value = settings[key]; $(id + '-display').textContent = fmt(settings[key]); });
+        modal.classList.add('active');
+    });
+    $('close-settings').addEventListener('click', () => modal.classList.remove('active'));
+    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('active'); });
+    $('apply-settings').addEventListener('click', () => {
+        fields.forEach(([id, key]) => { settings[key] = parseFloat($(id).value); });
+        saveSettings(settings);
+        updateSessionsUI();
+        setMode('focus');
+        modal.classList.remove('active');
+        document.dispatchEvent(new CustomEvent('flow:session-logged', { detail: { mode: 'settings' } }));
+    });
+
+    // Atalho: espaço inicia/pausa (fora de campos de texto)
+    document.addEventListener('keydown', e => {
+        if (e.code !== 'Space' || /INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)) return;
+        if (!document.getElementById('section-today').classList.contains('active')) return;
+        e.preventDefault();
+        toggle();
+    });
+
+    window.FlowTimer = { setFocusCount(n) { focusToday = n; updateSessionsUI(); } };
+
+    // Retoma o cronômetro se ele estava rodando antes de recarregar a página
+    if (sw.startAt || sw.accMs) setMode('stopwatch');
+    updateDisplay();
+    updateSessionsUI();
 }
 
 window.initTimer = initTimer;
