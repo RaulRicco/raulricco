@@ -81,6 +81,24 @@ export async function deleteTask(db, id, userId) {
   return result.meta.changes > 0;
 }
 
+export async function getTasksRange(db, userId, from, to, status) {
+  const extra = status === 'pending' ? ' AND completed = 0' : status === 'done' ? ' AND completed = 1' : '';
+  return db.prepare(
+    `SELECT * FROM tasks WHERE user_id = ? AND date >= ? AND date <= ?${extra} ORDER BY date ASC, sort_order ASC, created_at ASC`
+  ).bind(userId, from, to).all();
+}
+
+export async function getSessionsRange(db, userId, from, to) {
+  return db.prepare(
+    'SELECT * FROM pomodoro_sessions WHERE user_id = ? AND date >= ? AND date <= ? ORDER BY created_at ASC'
+  ).bind(userId, from, to).all();
+}
+
+export async function deleteSession(db, id, userId) {
+  const r = await db.prepare('DELETE FROM pomodoro_sessions WHERE id = ? AND user_id = ?').bind(id, userId).run();
+  return r.meta.changes > 0;
+}
+
 export async function getSessionsByDate(db, userId, date) {
   return db.prepare(
     'SELECT * FROM pomodoro_sessions WHERE user_id = ? AND date = ? ORDER BY created_at ASC'

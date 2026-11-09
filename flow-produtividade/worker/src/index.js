@@ -3,7 +3,8 @@ import { handleGetTasks, handleCreateTask, handleUpdateTask, handleDeleteTask } 
 import { handleGetSessions, handleCreateSession, handleUpdateSession } from './sessions.js';
 import { handleGetGoals, handleCreateGoal, handleUpdateGoal, handleDeleteGoal } from './goals.js';
 import { handleGetAreas, handleCreateArea, handleUpdateArea } from './areas.js';
-import { getStats, getAnalytics, getReview, upsertReview } from './db.js';
+import { getStats, getAnalytics, getReview, upsertReview, getUserById, getTasksRange, deleteSession, getSessionsRange } from './db.js';
+import { TOKEN_PREFIX, userFromApiToken, handleListTokens, handleCreateToken, handleDeleteToken } from './tokens.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -20,18 +21,26 @@ function cors(response, origin) {
   return new Response(response.body, { status: response.status, headers });
 }
 
-async function authenticate(request, env) {
+// Retorna { userId, via } — via 'jwt' (login no app) ou 'token' (chave de API de automação)
+async function authenticate(request, env, ctx) {
   const auth = request.headers.get('Authorization');
   if (!auth || !auth.startsWith('Bearer ')) return null;
+  const credential = auth.slice(7).trim();
   try {
-    return await verifyJWT(auth.slice(7), env.JWT_SECRET);
+    if (credential.startsWith(TOKEN_PREFIX)) {
+      const userId = await userFromApiToken(env, credential, ctx);
+      return userId ? { userId, via: 'token' } : null;
+    }
+    return { userId: await verifyJWT(credential, env.JWT_SECRET), via: 'jwt' };
   } catch {
     return null;
   }
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
@@ -58,11 +67,29 @@ export default {
         response = await handleGoogleCallback(request, env);
       } else {
         // Rotas protegidas
-        const userId = await authenticate(request, env);
+        const authInfo = await authenticate(request, env, ctx);
+        const userId = authInfo?.userId;
         if (!userId) {
           response = json({ error: 'Não autorizado' }, 401);
+        } else if (path === '/me' && method === 'GET') {
+          const u = await getUserById(env.DB, userId);
+          response = json({ id: u.id, email: u.email, name: u.name, auth: authInfo.via });
+        } else if (path === '/tokens') {
+          // Gerenciar chaves exige login real no app (uma chave não cria outras chaves)
+          if (authInfo.via !== 'jwt') response = json({ error: 'Gerencie chaves pelo app (login com senha)' }, 403);
+          else if (method === 'GET') response = await handleListTokens(request, env, userId);
+          else if (method === 'POST') response = await handleCreateToken(request, env, userId);
+          else response = json({ error: 'Método não permitido' }, 405);
+        } else if (path.startsWith('/tokens/')) {
+          if (authInfo.via !== 'jwt') response = json({ error: 'Gerencie chaves pelo app (login com senha)' }, 403);
+          else if (method === 'DELETE') response = await handleDeleteToken(request, env, userId, path.slice(8));
+          else response = json({ error: 'Método não permitido' }, 405);
         } else if (path === '/tasks') {
-          if (method === 'GET') response = await handleGetTasks(request, env, userId);
+          const from = url.searchParams.get('from'), to = url.searchParams.get('to');
+          if (method === 'GET' && (from || to)) {
+            if (!DATE_RE.test(from || '') || !DATE_RE.test(to || '')) response = json({ error: 'from e to devem ser YYYY-MM-DD' }, 400);
+            else response = json((await getTasksRange(env.DB, userId, from, to, url.searchParams.get('status'))).results);
+          } else if (method === 'GET') response = await handleGetTasks(request, env, userId);
           else if (method === 'POST') response = await handleCreateTask(request, env, userId);
           else response = json({ error: 'Método não permitido' }, 405);
         } else if (path.startsWith('/tasks/')) {
@@ -71,12 +98,17 @@ export default {
           else if (method === 'DELETE') response = await handleDeleteTask(request, env, userId, taskId);
           else response = json({ error: 'Método não permitido' }, 405);
         } else if (path === '/sessions') {
-          if (method === 'GET') response = await handleGetSessions(request, env, userId);
+          const from = url.searchParams.get('from'), to = url.searchParams.get('to');
+          if (method === 'GET' && (from || to)) {
+            if (!DATE_RE.test(from || '') || !DATE_RE.test(to || '')) response = json({ error: 'from e to devem ser YYYY-MM-DD' }, 400);
+            else response = json((await getSessionsRange(env.DB, userId, from, to)).results);
+          } else if (method === 'GET') response = await handleGetSessions(request, env, userId);
           else if (method === 'POST') response = await handleCreateSession(request, env, userId);
           else response = json({ error: 'Método não permitido' }, 405);
         } else if (path.startsWith('/sessions/')) {
           const sessionId = path.slice(10);
           if (method === 'PATCH') response = await handleUpdateSession(request, env, userId, sessionId);
+          else if (method === 'DELETE') response = (await deleteSession(env.DB, sessionId, userId)) ? json({ ok: true }) : json({ error: 'Sessão não encontrada' }, 404);
           else response = json({ error: 'Método não permitido' }, 405);
         } else if (path === '/reviews') {
           const date = url.searchParams.get('date');

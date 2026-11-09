@@ -265,6 +265,10 @@
         .icon-pick.on { background: var(--surface-3); outline: 1px solid var(--muted); }
         .hm-row { display: flex; gap: 8px; align-items: center; }
         .hm-row .input { width: 76px; text-align: center; }
+        code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; color: var(--text-2); }
+        .token-new { margin-top: 14px; background: rgba(201,133,0,.07); border: 1px solid #4a3a14; border-radius: var(--radius-sm); padding: 14px; }
+        .token-box { display: flex; align-items: center; gap: 8px; margin-top: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+        .token-box code { flex: 1; background: none; padding: 0; word-break: break-all; color: var(--text); user-select: all; }
         .link-btn { color: var(--muted); font-size: 12px; text-decoration: underline; }
         .link-btn:hover { color: var(--text); }
         select.input.compact { width: auto; padding: 7px 10px; font-size: 12px; }
@@ -332,6 +336,8 @@
         <button class="nav-tab" data-section="areas"><i class="fas fa-shapes"></i>Áreas</button>
         <button class="nav-tab" data-section="goals"><i class="fas fa-bullseye"></i>Metas</button>
         <button class="nav-tab" data-section="method"><i class="fas fa-book-open"></i>O método</button>
+        <div class="nav-label">Conta</div>
+        <button class="nav-tab" data-section="integrations"><i class="fas fa-plug"></i>Integrações</button>
         <div class="sidebar-foot">
             <div id="user-info" class="muted small" style="padding:6px 12px"></div>
             <button id="logout-btn" class="nav-tab" style="color:var(--bad)"><i class="fas fa-sign-out-alt" style="color:var(--bad)"></i>Sair</button>
@@ -581,6 +587,36 @@
                 <div class="grid g-3" id="goals-columns"></div>
             </section>
 
+            <!-- INTEGRAÇÕES -->
+            <section class="section" id="section-integrations">
+                <div class="grid g-2" style="align-items:start">
+                    <div class="stack">
+                        <div class="card">
+                            <div class="card-head"><h3><i class="fas fa-key"></i>Chaves de API</h3></div>
+                            <p class="card-sub">Uma chave dá ao seu assistente virtual acesso total aos seus dados do Flow (ler e editar tarefas, áreas, tempo, metas e shutdown). Ela não expira — revogue quando não usar mais.</p>
+                            <div class="add-row">
+                                <input type="text" id="token-name" class="input" placeholder="Nome (ex.: Assistente MacBook)" maxlength="60">
+                                <button class="btn" id="create-token"><i class="fas fa-plus"></i>Gerar chave</button>
+                            </div>
+                            <div id="token-new" class="token-new" style="display:none">
+                                <p><i class="fas fa-triangle-exclamation" style="color:var(--warn)"></i> <b>Copie agora</b> — por segurança ela não será mostrada de novo.</p>
+                                <div class="token-box"><code id="token-value"></code><button class="icon-btn" id="copy-token" title="Copiar"><i class="fas fa-copy"></i></button></div>
+                                <p class="muted small" style="margin-top:10px">No Terminal do Mac (com o Flow local instalado):</p>
+                                <div class="token-box"><code id="token-cmd"></code><button class="icon-btn" id="copy-cmd" title="Copiar"><i class="fas fa-copy"></i></button></div>
+                                <button class="link-btn" id="hide-token" style="margin-top:8px">Já copiei, ocultar</button>
+                            </div>
+                            <div id="tokens-list" style="margin-top:14px;overflow-x:auto"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-head"><h3><i class="fas fa-laptop-code"></i>Flow no seu Mac</h3></div>
+                        <div class="method-step"><span class="n">1</span><div><h4>Instalar</h4><p>No Terminal: <code>bash flow-produtividade/local/install.sh</code> (dentro da pasta do projeto). Instala o comando <code>flow</code> e o servidor MCP em <code>~/.flow</code>.</p></div></div>
+                        <div class="method-step" style="margin-top:14px"><span class="n">2</span><div><h4>Conectar</h4><p>Gere uma chave aqui e rode <code>flow login --token …</code>, ou só <code>flow login</code> com email e senha.</p></div></div>
+                        <div class="method-step" style="margin-top:14px"><span class="n">3</span><div><h4>Ligar no assistente</h4><p>Comandos com saída JSON (<code>flow today --json</code>, <code>flow task add …</code>) ou servidor MCP: <code>node ~/.flow/app/mcp.mjs</code>. O guia completo para o assistente fica em <code>~/.flow/AGENT.md</code>.</p></div></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- MÉTODO -->
             <section class="section" id="section-method">
                 <div class="grid g-2">
@@ -715,6 +751,7 @@
 <script src="js/analytics.js"></script>
 <script src="js/review.js"></script>
 <script src="js/areas.js"></script>
+<script src="js/integrations.js"></script>
 <script>
     // Token vindo do Google OAuth
     const urlParams = new URLSearchParams(window.location.search);
@@ -741,6 +778,7 @@
         areas: ['Áreas', () => 'Quanto foco cada área da sua vida precisa — e quanto está recebendo'],
         goals: ['Metas', () => 'Direção: trimestre → mês → semana'],
         method: ['O método', () => 'Como o Flow System funciona'],
+        integrations: ['Integrações', () => 'Conecte seu assistente virtual e automações ao Flow'],
     };
     function go(sec) {
         document.querySelectorAll('.nav-tab[data-section]').forEach(t => t.classList.toggle('active', t.dataset.section === sec));
@@ -752,6 +790,7 @@
         if (sec === 'goals') loadGoals();
         if (sec === 'weekly') Review.renderWeekly();
         if (sec === 'areas') AreasUI.render();
+        if (sec === 'integrations') Integrations.render();
         try { localStorage.setItem('flow_section', sec); } catch (e) {}
     }
     document.querySelectorAll('.nav-tab[data-section]').forEach(t => t.addEventListener('click', () => go(t.dataset.section)));
@@ -804,6 +843,7 @@
     Analytics.bind();
     Review.bind();
     AreasUI.bind();
+    Integrations.bind();
     FlowAreas.load().then(loadSessions);
     let startSection = 'today';
     try { startSection = localStorage.getItem('flow_section') || 'today'; } catch (e) {}
