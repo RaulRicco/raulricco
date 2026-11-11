@@ -178,6 +178,13 @@ function need(id, what = 'id') { if (!id) throw new FlowError(`${what} é obriga
 
 export const deleteTask = id => api('DELETE', `/tasks/${need(id)}`);
 
+// Conclui a etapa de hoje (conta como feita hoje) e cria a próxima etapa (padrão: amanhã)
+export async function completeStep(id, { next, date, keepMit } = {}) {
+    return api('POST', `/tasks/${need(id)}/continue`, {
+        text: next || undefined, date: date ? resolveDate(date) : brDate(-1), keep_mit: !!keepMit,
+    });
+}
+
 // ---------- Sessões / tempo ----------
 export async function logTime({ minutes, area, task, date, quality }) {
     const m = parseMinutes(minutes);

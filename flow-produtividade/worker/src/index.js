@@ -1,5 +1,5 @@
 import { verifyJWT, handleRegister, handleLogin, handleGoogleStart, handleGoogleCallback } from './auth.js';
-import { handleGetTasks, handleCreateTask, handleUpdateTask, handleDeleteTask } from './tasks.js';
+import { handleGetTasks, handleCreateTask, handleUpdateTask, handleDeleteTask, handleContinueTask } from './tasks.js';
 import { handleGetSessions, handleCreateSession, handleUpdateSession } from './sessions.js';
 import { handleGetGoals, handleCreateGoal, handleUpdateGoal, handleDeleteGoal } from './goals.js';
 import { handleGetAreas, handleCreateArea, handleUpdateArea } from './areas.js';
@@ -91,6 +91,10 @@ export default {
             else response = json((await getTasksRange(env.DB, userId, from, to, url.searchParams.get('status'))).results);
           } else if (method === 'GET') response = await handleGetTasks(request, env, userId);
           else if (method === 'POST') response = await handleCreateTask(request, env, userId);
+          else response = json({ error: 'Método não permitido' }, 405);
+        } else if (path.startsWith('/tasks/') && path.endsWith('/continue')) {
+          const taskId = path.slice(7, -'/continue'.length);
+          if (method === 'POST') response = await handleContinueTask(request, env, userId, taskId);
           else response = json({ error: 'Método não permitido' }, 405);
         } else if (path.startsWith('/tasks/')) {
           const taskId = path.slice(7);

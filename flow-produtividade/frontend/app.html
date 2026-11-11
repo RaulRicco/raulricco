@@ -135,6 +135,9 @@
         button.chip:hover { border-color: var(--muted); }
         .chip-q { border-color: color-mix(in srgb, var(--q-color) 50%, transparent); }
         .chip-pomo.over { color: var(--warn); }
+        .chip-step { color: var(--violet); border-color: rgba(144,133,233,.4); }
+        .chip-next { color: var(--good); border-color: rgba(25,158,112,.4); }
+        .icon-btn.step-btn:hover { color: var(--good); }
         .matrix { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .matrix-cell { background: var(--bg); border: 1px dashed var(--border); border-top: 3px solid var(--q-color); border-radius: var(--radius-sm); padding: 10px; min-height: 140px; }
         .matrix-cell.drop { border-color: var(--q-color); background: var(--surface-2); }
@@ -706,6 +709,20 @@
             <div><label class="field-label">Ícone</label><div class="icon-grid" id="area-icons"></div></div>
         </div>
         <div class="modal-foot"><button id="cancel-area" class="btn ghost">Cancelar</button><button id="save-area" class="btn">Salvar</button></div>
+    </div>
+</div>
+
+<!-- Modal Etapa concluída -->
+<div class="modal" id="step-modal">
+    <div class="modal-content">
+        <div class="modal-head"><h3><i class="fas fa-forward" style="color:var(--good)"></i> Etapa concluída</h3><button id="close-step" class="icon-btn"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body">
+            <p class="muted small">A tarefa <b id="step-current" style="color:var(--text)"></b> fica marcada como <b>feita hoje</b> (conta nas métricas do dia) e a próxima etapa aparece na data escolhida.</p>
+            <div><label class="field-label" for="step-next-text">Próxima etapa (Etapa <span id="step-num">2</span>)</label><input type="text" id="step-next-text" class="input" maxlength="500"></div>
+            <div><label class="field-label" for="step-date">Aparece em</label><input type="date" id="step-date" class="input"></div>
+            <label class="check-row" id="step-keep-mit-row" style="border:0;padding:0"><input type="checkbox" id="step-keep-mit"><span>Manter no Big 3</span></label>
+        </div>
+        <div class="modal-foot"><button id="cancel-step" class="btn ghost">Cancelar</button><button id="save-step" class="btn"><i class="fas fa-check"></i>Concluir etapa</button></div>
     </div>
 </div>
 

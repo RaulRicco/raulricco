@@ -150,7 +150,7 @@ export async function getAnalytics(db, userId, since) {
        FROM pomodoro_sessions WHERE user_id = ? AND date >= ? AND completed = 1 ORDER BY created_at ASC`
     ).bind(userId, since),
     db.prepare(
-      `SELECT id, text, date, completed, priority, area, important, urgent, is_mit, estimate, completed_at, created_at
+      `SELECT id, text, date, completed, priority, area, important, urgent, is_mit, estimate, completed_at, created_at, step, continues_from, continued_to
        FROM tasks WHERE user_id = ? AND date >= ? ORDER BY date ASC`
     ).bind(userId, since),
     db.prepare(

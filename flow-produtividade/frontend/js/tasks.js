@@ -77,15 +77,23 @@ function initTasks(API) {
             <button class="task-check" aria-label="Concluir">${task.completed ? '<i class="fas fa-check"></i>' : ''}</button>
             <span class="task-text" title="Clique para editar">${escapeHtml(task.text)}</span>
             <span class="task-meta">
+                ${task.step > 1 ? `<span class="chip chip-step" title="Continuação de uma etapa anterior">Etapa ${task.step}</span>` : ''}
+                ${task.completed && task.continued_to ? `<span class="chip chip-next" title="Esta etapa foi concluída e continua em outro dia"><i class="fas fa-share"></i><span class="hide-sm">continua</span></span>` : ''}
                 ${compact ? '' : `<button class="chip chip-q" title="${QUADRANTS[q].hint} — clique para mudar">${QUADRANTS[q].label}</button>`}
                 <label class="chip chip-area" title="Área"><i class="fas ${area.icon}" style="color:${area.color}"></i><select class="chip-select" aria-label="Área">${areaOptions(task.area, { includeNone: !task.area })}</select></label>
                 <span class="chip chip-pomo ${done > est ? 'over' : ''}" title="Pomodoros feitos / estimados">🍅 ${done}/${est}</span>
                 <button class="icon-btn star ${task.is_mit ? 'on' : ''}" title="${task.is_mit ? 'Remover do Big 3' : 'Marcar como Big 3'}"><i class="fas fa-star"></i></button>
+                ${task.completed ? '' : '<button class="icon-btn step-btn" title="Etapa concluída hoje — continua amanhã"><i class="fas fa-forward"></i></button>'}
                 ${task.completed ? '' : '<button class="icon-btn focus-btn" title="Focar nesta tarefa"><i class="fas fa-crosshairs"></i></button>'}
                 ${compact ? '' : '<button class="icon-btn del" title="Excluir"><i class="fas fa-trash-alt"></i></button>'}
             </span>`;
 
-        el.querySelector('.task-check').addEventListener('click', () => updateTask(task.id, { completed: !task.completed }));
+        el.querySelector('.task-check').addEventListener('click', () => {
+            if (task.completed && task.continued_to && !confirm('Reabrir esta etapa? A continuação criada para o próximo dia será removida (se ainda não foi concluída).')) return;
+            updateTask(task.id, { completed: !task.completed });
+        });
+        const sBtn = el.querySelector('.step-btn');
+        if (sBtn) sBtn.addEventListener('click', () => openStep(task));
         el.querySelector('.task-text').addEventListener('click', e => startEdit(task, e.currentTarget));
         el.querySelector('.chip-select').addEventListener('change', e => updateTask(task.id, { area: e.target.value }));
         el.querySelector('.star').addEventListener('click', () => toggleMit(task));
@@ -184,6 +192,57 @@ function initTasks(API) {
         }
         await updateTask(task.id, { is_mit: !task.is_mit });
     }
+
+    // Etapa concluída hoje, continua em outro dia (padrão: amanhã)
+    let stepTask = null;
+    function openStep(task) {
+        stepTask = task;
+        const m = document.getElementById('step-modal');
+        document.getElementById('step-current').textContent = task.text;
+        document.getElementById('step-num').textContent = (task.step || 1) + 1;
+        document.getElementById('step-next-text').value = task.text;
+        const d = document.getElementById('step-date');
+        d.value = brDate(-1);
+        d.min = brDate(-1);
+        document.getElementById('step-keep-mit').checked = !!task.is_mit;
+        document.getElementById('step-keep-mit-row').style.display = task.is_mit ? '' : 'none';
+        m.classList.add('active');
+        setTimeout(() => document.getElementById('step-next-text').select(), 50);
+    }
+    async function confirmStep() {
+        if (!stepTask) return;
+        const btn = document.getElementById('save-step');
+        btn.disabled = true;
+        try {
+            const res = await apiRequest(`${API}/tasks/${stepTask.id}/continue`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    text: document.getElementById('step-next-text').value.trim() || stepTask.text,
+                    date: document.getElementById('step-date').value || brDate(-1),
+                    keep_mit: document.getElementById('step-keep-mit').checked,
+                }),
+            });
+            const data = res ? await res.json().catch(() => ({})) : {};
+            if (!res || !res.ok) { toast(data.error || 'Não foi possível concluir a etapa.'); return; }
+            const idx = tasks.findIndex(t => t.id === stepTask.id);
+            if (idx !== -1) tasks[idx] = data.done;
+            if (data.next.date === today) tasks.push(data.next);
+            document.getElementById('step-modal').classList.remove('active');
+            const when = data.next.date === brDate(-1) ? 'amanhã' : fmtDateShort(data.next.date);
+            toast(`Etapa concluída ✓ A etapa ${data.next.step} aparece ${when}.`);
+            stepTask = null;
+            render();
+        } finally { btn.disabled = false; }
+    }
+    (() => {
+        const m = document.getElementById('step-modal');
+        const close = () => m.classList.remove('active');
+        document.getElementById('close-step').addEventListener('click', close);
+        document.getElementById('cancel-step').addEventListener('click', close);
+        m.addEventListener('click', e => { if (e.target === m) close(); });
+        document.getElementById('save-step').addEventListener('click', confirmStep);
+        document.getElementById('step-next-text').addEventListener('keydown', e => { if (e.key === 'Enter') confirmStep(); });
+    })();
 
     async function updateTask(id, fields) {
         try {

@@ -5,7 +5,7 @@ import { createInterface } from 'node:readline';
 import * as F from './lib.mjs';
 
 const argv = process.argv.slice(2);
-const BOOL_FLAGS = new Set(['mit', 'no-mit', 'pending', 'done', 'json', 'j']);
+const BOOL_FLAGS = new Set(['mit', 'no-mit', 'pending', 'done', 'json', 'j', 'keep-mit']);
 const opts = {};
 const pos = [];
 for (let i = 0; i < argv.length; i++) {
@@ -43,6 +43,8 @@ Tarefas
   flow tasks [--date D | --from D --to D] [--pending|--done]
   flow task add "Texto" [--area Nome] [--q q1..q4] [--mit] [--est 2] [--date D]
   flow task done|undo|rm <id>
+  flow task step <id> [--next "Próxima etapa"] [--date amanhã] [--keep-mit]
+                                      Etapa feita hoje; a continuação aparece no dia seguinte
   flow task edit <id> [--text ..] [--area ..] [--q ..] [--mit|--no-mit] [--est N] [--date D]
 
 Tempo / foco
@@ -128,6 +130,8 @@ async function main() {
             if (sub === 'add') return out(await F.addTask({ text: rest.join(' ') || opts.text, area: opts.area, quadrant: opts.q, mit: !!opts.mit, estimate: opts.est ? +opts.est : undefined, date: opts.date }), taskLine);
             if (sub === 'done' || sub === 'undo') return out(await F.updateTask(id, { completed: sub === 'done' }), taskLine);
             if (sub === 'rm') return out(await F.deleteTask(id), () => 'Tarefa excluída.');
+            if (sub === 'step') return out(await F.completeStep(id, { next: opts.next, date: opts.date, keepMit: !!opts['keep-mit'] }),
+                r => `✔ Etapa ${r.done.step || 1} concluída hoje.\n→ Etapa ${r.next.step} em ${r.next.date}: ${r.next.text}  ${r.next.id}`);
             if (sub === 'edit') return out(await F.updateTask(id, { text: opts.text, area: opts.area, quadrant: opts.q, mit: flag('mit', 'no-mit'), estimate: opts.est ? +opts.est : undefined, date: opts.date }), taskLine);
             break;
         }

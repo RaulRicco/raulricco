@@ -12,6 +12,7 @@ Datas são sempre no fuso **America/Sao_Paulo**, formato `YYYY-MM-DD` (CLI/MCP t
 
 - **Áreas**: cada área da vida (Profissional, Pessoal, Saúde…) tem uma meta de foco em minutos por `daily`/`weekly`/`monthly`. Semana = segunda a domingo. Ids `work` e `personal` são as áreas padrão; áreas criadas têm id UUID. Pode referenciar por nome.
 - **Tarefas**: classificadas na Matriz de Eisenhower — `q1` Fazer agora (urgente+importante), `q2` Agendar (importante), `q3` Delegar (urgente), `q4` Eliminar. **Big 3** (`mit`) = até 3 tarefas principais do dia. `estimate` = pomodoros estimados. Tarefas pendentes de dias anteriores são movidas para hoje automaticamente quando o app abre.
+- **Etapas**: quando uma demanda foi trabalhada hoje mas depende de outras etapas, use *concluir etapa* (`flow task step <id>` / `flow_complete_step`): a tarefa conta como feita hoje e a continuação (`step` + 1, `continues_from` = id anterior) aparece no dia seguinte. Reabrir (`completed: false`) uma etapa já continuada remove a continuação se ela ainda não foi concluída.
 - **Sessões**: tempo de foco (`mode: focus`) com `duration_minutes`, área, tarefa opcional e nota de qualidade 1–5. É isso que conta para as metas das áreas. Lançar tempo = criar sessão.
 - **Metas**: `quarterly`/`monthly`/`weekly`, com `current_value`/`target_value` numéricos.
 - **Shutdown diário** (`reviews`): energia 1–5, humor 1–5, vitória, bloqueios, prioridade de amanhã.
@@ -34,6 +35,7 @@ flow tasks --from 2026-11-01 --to 2026-11-30 --done
 flow task add "Enviar proposta" --area Profissional --q q1 --mit --est 2
 flow task edit <id> --q q2 --date amanhã --area Clientes
 flow task done <id>        # undo <id> reabre; rm <id> exclui
+flow task step <id> --next "Aguardar retorno do cliente"   # etapa feita hoje, continua amanhã
 flow log 1h30 --area Saúde --quality 4      # lançar tempo de foco
 flow log 25 --task <id>                      # a área vem da tarefa
 flow sessions --date hoje | flow session rm <id> | flow session rate <id> 5
@@ -49,7 +51,7 @@ flow api GET "/analytics?since=2026-10-01"   # acesso direto
 
 ## Ferramentas MCP
 
-`flow_today`, `flow_stats{days}`, `flow_list_tasks{date|from,to,status}`, `flow_add_task{text,area,quadrant,mit,estimate,date}`, `flow_update_task{id,…,completed}`, `flow_delete_task{id}`, `flow_log_time{minutes,area,task,date,quality}`, `flow_list_sessions`, `flow_update_session{id,quality}`, `flow_delete_session{id}`, `flow_list_areas`, `flow_upsert_area{id?,name,target,period,color,icon,archived}`, `flow_list_goals`, `flow_add_goal`, `flow_update_goal{id,current,target,title}`, `flow_delete_goal{id}`, `flow_get_review{date}`, `flow_set_review{date,energy,mood,wins,blockers,tomorrow}`, `flow_api{method,path,body}`.
+`flow_today`, `flow_stats{days}`, `flow_list_tasks{date|from,to,status}`, `flow_add_task{text,area,quadrant,mit,estimate,date}`, `flow_update_task{id,…,completed}`, `flow_complete_step{id,next,date,keep_mit}`, `flow_delete_task{id}`, `flow_log_time{minutes,area,task,date,quality}`, `flow_list_sessions`, `flow_update_session{id,quality}`, `flow_delete_session{id}`, `flow_list_areas`, `flow_upsert_area{id?,name,target,period,color,icon,archived}`, `flow_list_goals`, `flow_add_goal`, `flow_update_goal{id,current,target,title}`, `flow_delete_goal{id}`, `flow_get_review{date}`, `flow_set_review{date,energy,mood,wins,blockers,tomorrow}`, `flow_api{method,path,body}`.
 
 Exemplo de configuração MCP (formato Claude Desktop / Cursor / maioria dos clientes):
 
@@ -66,6 +68,7 @@ Exemplo de configuração MCP (formato Claude Desktop / Cursor / maioria dos cli
 | POST | `/tasks` | `text, date, area, important(0/1), urgent(0/1), is_mit, estimate` |
 | PATCH | `/tasks/:id` | qualquer de `text, completed, area, important, urgent, is_mit, estimate, date, sort_order` |
 | DELETE | `/tasks/:id` | — |
+| POST | `/tasks/:id/continue` | `text?, date?(padrão: dia seguinte), keep_mit?` → `{done, next}` |
 | GET | `/sessions?date=D` ou `?from=D&to=D` | — |
 | POST | `/sessions` | `mode(focus\|shortBreak\|longBreak), duration_minutes(1–720), date, area, task_id` |
 | PATCH | `/sessions/:id` | `focus_quality(1–5), task_id` |
