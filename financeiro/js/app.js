@@ -108,7 +108,9 @@ function emptyBox(text, icon = 'inbox') { return `<div class="empty">${ic(icon)}
 /* ---------- Helpers de nomes ---------- */
 const catName = (id) => { const c = Store.get('categories', id); if (!c) return 'Sem categoria'; const p = c.parentId && Store.get('categories', c.parentId); return p ? `${p.name} › ${c.name}` : c.name; };
 const catColor = (id) => Store.get('categories', id)?.color || '#c4c8d4';
-const accName = (t) => t.cardId && !t.cardPayment ? '💳 ' + (Store.get('cards', t.cardId)?.name || 'Cartão') : (Store.get('accounts', t.accountId)?.name || '—');
+const accName = (t) => t.cardId && !t.cardPayment ? '💳 ' + (Store.get('cards', t.cardId)?.name || 'Cartão') : (Store.get('accounts', t.invest === 'resgate' ? t.toAccountId : t.accountId)?.name || '—');
+/** Texto da linha de baixo no extrato para aplicações e resgates. */
+const investLabel = (t) => `📈 ${t.invest === 'aplicacao' ? 'Aplicação em investimento' : 'Resgate de investimento'}${Store.get('investments', t.investmentId) ? ' · ' + esc(Store.get('investments', t.investmentId).name) : ''}`;
 const optList = (arr, sel, empty) => (empty !== undefined ? `<option value="">${empty}</option>` : '') + arr.map((x) => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
 function catOptions(type, sel, empty = 'Sem categoria') {
   const roots = S().categories.filter((c) => (!type || c.type === type) && !c.parentId).sort((a, b) => a.name.localeCompare(b.name));
@@ -120,6 +122,7 @@ function catOptions(type, sel, empty = 'Sem categoria') {
   return h;
 }
 function statusBadge(t) {
+  if (t.invest) return `<span class="badge b-success">${t.invest === 'aplicacao' ? 'Investido' : 'Resgatado'}</span>`;
   if (t.type === 'transferencia') return `<span class="badge b-primary">${t.paid ? 'Transferido' : 'Agendada'}</span>`;
   if (t.cardId && !t.cardPayment) return '<span class="badge b-muted">Cartão</span>';
   if (t.paid) return `<span class="badge b-success">${t.type === 'receita' ? 'Recebido' : 'Pago'}</span>`;
@@ -294,7 +297,22 @@ function askEditScope(t, updated, future, preferNext) {
 }
 
 function deleteTx(t) {
-  const rec = t.recurrenceId && Store.get('recurrences', t.recurrenceId);
+  if (t.invest) {
+    const ap = t.invest === 'aplicacao';
+    confirmBox(`Excluir <b>${esc(t.desc)}</b> (${money(t.amount)})? O valor ${ap ? 'volta para a conta e sai' : 'sai da conta e volta para'} o investimento.`, () => {
+      const i = Store.get('investments', t.investmentId);
+      if (i) {
+        const s = ap ? -1 : 1;
+        i.invested = round2(Math.max(0, Number(i.invested) + s * (t.invInvested ?? t.amount)));
+        i.current = round2(Math.max(0, Number(i.current) + s * t.amount));
+        Store.upsert('investments', i, i.name);
+      }
+      Store.remove('tx', t.id, t.desc);
+      toast('Excluído');
+    });
+    return;
+  }
+  const rec =t.recurrenceId && Store.get('recurrences', t.recurrenceId);
   if (rec) {
     modal('Excluir lançamento fixo', `
       <p style="margin:0 0 14px"><b>${esc(t.desc)}</b> (${money(t.amount)}) se repete ${Store.isWeekly(rec) ? 'toda semana' : 'todo mês'}. O que você quer apagar?</p>
@@ -544,13 +562,13 @@ ROUTES.extrato = {
       ${rows.map((t) => `<tr>
         <td><input type="checkbox" class="check" data-rec="${t.id}" ${t.reconciled ? 'checked' : ''} ${t.paid ? '' : 'disabled'} title="Conciliado" style="accent-color:var(--primary)"></td>
         <td>${fdate(t.date)}</td>
-        <td class="desc-cell"><b>${esc(t.desc)}${t.recurrenceId ? ' <span class="badge b-primary" title="Lançamento fixo">↻ fixo</span>' : ''}</b><small>${t.type === 'transferencia' ? `Transferência → ${esc(Store.get('accounts', t.toAccountId)?.name)}` : t.cardPayment ? 'Pagamento de fatura' : `<span class="dot-c" style="background:${catColor(t.categoryId)}"></span>${esc(catName(t.categoryId))}`}${t.costCenterId ? ' · ' + esc(Store.get('costCenters', t.costCenterId)?.name) : ''}</small></td>
+        <td class="desc-cell"><b>${esc(t.desc)}${t.recurrenceId ? ' <span class="badge b-primary" title="Lançamento fixo">↻ fixo</span>' : ''}</b><small>${t.invest ? investLabel(t) : t.type === 'transferencia' ? `Transferência → ${esc(Store.get('accounts', t.toAccountId)?.name)}` : t.cardPayment ? 'Pagamento de fatura' : `<span class="dot-c" style="background:${catColor(t.categoryId)}"></span>${esc(catName(t.categoryId))}`}${t.costCenterId ? ' · ' + esc(Store.get('costCenters', t.costCenterId)?.name) : ''}</small></td>
         <td>${esc(accName(t))}</td>
-        <td class="num ${t.type === 'receita' ? 'pos' : t.type === 'despesa' ? 'neg' : ''}">${t.type === 'despesa' ? '−' : t.type === 'receita' ? '+' : ''} ${money(t.amount)}</td>
+        <td class="num ${t.type === 'receita' ? 'pos' : t.type === 'despesa' ? 'neg' : ''}">${t.type === 'despesa' || t.invest === 'aplicacao' ? '−' : t.type === 'receita' || t.invest === 'resgate' ? '+' : ''} ${money(t.amount)}</td>
         <td>${statusBadge(t)}</td>
         <td class="act">
           ${t.type !== 'transferencia' && !(t.cardId && !t.cardPayment) ? `<button class="btn-icon" data-pay="${t.id}" title="${t.paid ? 'Marcar como pendente' : 'Dar baixa'}">${ic(t.paid ? 'rotate-ccw' : 'check')}</button>` : ''}
-          ${t.cardPayment ? '' : `<button class="btn-icon" data-edit="${t.id}" title="Editar">${ic('edit-2')}</button><button class="btn-icon" data-dup="${t.id}" title="Duplicar">${ic('copy')}</button>`}
+          ${t.cardPayment || t.invest ? '' : `<button class="btn-icon" data-edit="${t.id}" title="Editar">${ic('edit-2')}</button><button class="btn-icon" data-dup="${t.id}" title="Duplicar">${ic('copy')}</button>`}
           <button class="btn-icon" data-del="${t.id}" title="Excluir">${ic('trash-2')}</button>
         </td></tr>`).join('')}
       </tbody></table>` : emptyBox('Nenhum lançamento encontrado para este filtro.');
@@ -673,6 +691,39 @@ ROUTES.fixos = {
 /* CARTÕES                                                                */
 /* ====================================================================== */
 app.sub.card = null;
+app.sub.invSort = 'lanc';
+app.sub.invQ = '';
+/** Texto sem acento e em minúsculas, para a busca. */
+const normQ = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+/** Filtra as linhas da fatura na tela (sem redesenhar, para não perder o foco do campo). */
+function filterInvoice() {
+  const q = normQ(app.sub.invQ);
+  const numQ = q.replace(/r\$|\s/g, '');
+  const isNum = /^[\d.,]+$/.test(numQ);
+  let n = 0, sum = 0;
+  const rows = $$('tr[data-q]');
+  rows.forEach((tr) => {
+    const v = Number(tr.dataset.v);
+    const vals = [Math.abs(v).toFixed(2).replace('.', ','), money(Math.abs(v)).replace(/[^\d.,]/g, '')];
+    const ok = !q || tr.dataset.q.includes(q) || (isNum && vals.some((s) => s.includes(numQ)));
+    tr.style.display = ok ? '' : 'none';
+    if (ok) { n++; sum += v; }
+  });
+  const info = $('#invQInfo'), empty = $('#invQEmpty');
+  if (info) info.innerHTML = q ? `${n} de ${rows.length} compras · <b>${money(round2(sum))}</b>` : `${rows.length} compras`;
+  if (empty) empty.style.display = q && !n ? '' : 'none';
+}
+/** Ordenações da fatura do cartão. Desempate sempre pela ordem de lançamento. */
+const INV_SORTS = {
+  lanc: { label: 'Ordem de lançamento', fn: (a, b, o) => o.get(a.id) - o.get(b.id) },
+  'lanc-desc': { label: 'Últimos lançados primeiro', fn: (a, b, o) => o.get(b.id) - o.get(a.id) },
+  data: { label: 'Data da compra (antigas primeiro)', fn: (a, b) => a.date.localeCompare(b.date) },
+  'data-desc': { label: 'Data da compra (recentes primeiro)', fn: (a, b) => b.date.localeCompare(a.date) },
+  'valor-desc': { label: 'Maior valor', fn: (a, b) => b.amount - a.amount },
+  valor: { label: 'Menor valor', fn: (a, b) => a.amount - b.amount },
+  cat: { label: 'Categoria', fn: (a, b) => catName(a.categoryId).localeCompare(catName(b.categoryId), 'pt-BR') },
+  desc: { label: 'Descrição (A–Z)', fn: (a, b) => a.desc.localeCompare(b.desc, 'pt-BR') },
+};
 ROUTES.cartoes = {
   html() {
     const cards = S().cards;
@@ -682,7 +733,9 @@ ROUTES.cartoes = {
     if (card) {
       const inv = app.sub.inv || Calc.invoiceOf(card, todayStr());
       app.sub.inv = inv;
-      const items = Calc.invoiceItems(card.id, inv).sort((a, b) => a.date.localeCompare(b.date));
+      const sortKey = INV_SORTS[app.sub.invSort] ? app.sub.invSort : 'lanc';
+      const order = new Map(S().tx.map((t, i) => [t.id, i])); // posição na lista = ordem de lançamento
+      const items = Calc.invoiceItems(card.id, inv).sort((a, b) => INV_SORTS[sortKey].fn(a, b, order) || order.get(a.id) - order.get(b.id));
       const total = Calc.invoiceTotal(card.id, inv);
       const pay = Calc.invoicePayment(card.id, inv);
       const due = Calc.invoiceDue(card, inv);
@@ -696,18 +749,24 @@ ROUTES.cartoes = {
               <h5 style="text-transform:capitalize;min-width:150px;text-align:center">Fatura ${monthName(inv, true)}</h5>
               <button class="btn-icon" id="invNext">${ic('chevron-right')}</button>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${status}
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <select class="input" id="invSort" title="Ordenar compras" style="width:auto;height:34px;padding:0 30px 0 10px;font-size:13px">${Object.entries(INV_SORTS).map(([k, s]) => `<option value="${k}" ${k === sortKey ? 'selected' : ''}>${s.label}</option>`).join('')}</select>
+              ${status}
               <span class="muted">Vence ${fdate(due)}</span>
               <b style="font-size:16px">${money(total)}</b>
               ${!pay?.paid && total > 0 ? `<button class="btn btn-sm btn-success" id="payInv">${ic('check')}Pagar fatura</button>` : ''}
               ${pay?.paid ? `<button class="btn btn-sm btn-light" id="unpayInv">Desfazer pagamento</button>` : ''}
             </div>
           </div>
+          ${items.length ? `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 25px;border-bottom:1px solid var(--border)">
+            <input class="input" id="invQ" type="search" placeholder="Pesquisar na fatura por descrição ou valor (ex.: oxente, 52,98)" value="${esc(app.sub.invQ || '')}" style="flex:1;min-width:220px">
+            <span class="muted" id="invQInfo" style="font-size:13px"></span>
+          </div>` : ''}
           <div class="table-wrap">${items.length ? `<table class="tbl"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="num">Valor</th><th class="act"></th></tr></thead><tbody>
-            ${items.map((t) => `<tr><td>${fdate(t.date)}</td><td>${esc(t.desc)}</td><td><span class="dot-c" style="background:${catColor(t.categoryId)}"></span>${esc(catName(t.categoryId))}</td>
+            ${items.map((t) => `<tr data-q="${esc(normQ(t.desc + ' ' + catName(t.categoryId)))}" data-v="${t.type === 'receita' ? -t.amount : t.amount}"><td>${fdate(t.date)}</td><td>${esc(t.desc)}</td><td><span class="dot-c" style="background:${catColor(t.categoryId)}"></span>${esc(catName(t.categoryId))}</td>
               <td class="num ${t.type === 'receita' ? 'pos' : ''}">${t.type === 'receita' ? '−' : ''}${money(t.amount)}</td>
               <td class="act"><button class="btn-icon" data-edit="${t.id}">${ic('edit-2')}</button><button class="btn-icon" data-del="${t.id}">${ic('trash-2')}</button></td></tr>`).join('')}
-            </tbody></table>` : emptyBox('Nenhuma compra nesta fatura.', 'credit-card')}</div>
+            </tbody></table><div id="invQEmpty" style="display:none">${emptyBox('Nada encontrado nesta fatura.', 'search')}</div>` : emptyBox('Nenhuma compra nesta fatura.', 'credit-card')}</div>
         </div>`;
     }
     return head('Cartões de crédito', 'Limites, faturas e compras parceladas', `${card ? `<button class="btn btn-outline" id="newPurchase">${ic('shopping-cart')}Nova compra</button>` : ''}<button class="btn btn-primary" id="newCard">${ic('plus')}Novo cartão</button>`) + `
@@ -732,6 +791,9 @@ ROUTES.cartoes = {
     $$('[data-card]').forEach((b) => b.onclick = () => { app.sub.card = b.dataset.card; app.sub.inv = null; refresh(); });
     const card = Store.get('cards', app.sub.card); if (!card) return;
     $('#newPurchase').onclick = () => txForm({}, { cardId: card.id, type: 'despesa' });
+    $('#invSort').onchange = (e) => { app.sub.invSort = e.target.value; refresh(); };
+    $('#invQ') && ($('#invQ').oninput = (e) => { app.sub.invQ = e.target.value; filterInvoice(); });
+    filterInvoice();
     $('#invPrev').onclick = () => { app.sub.inv = addYm(app.sub.inv, -1); refresh(); };
     $('#invNext').onclick = () => { app.sub.inv = addYm(app.sub.inv, 1); refresh(); };
     $('#payInv') && ($('#payInv').onclick = () => payItem({ kind: 'pagar', date: Calc.invoiceDue(card, app.sub.inv), desc: `Fatura ${card.name} (${monthName(app.sub.inv)})`, amount: Calc.invoiceTotal(card.id, app.sub.inv), invoice: { cardId: card.id, month: app.sub.inv } }));
@@ -1003,7 +1065,9 @@ ROUTES.investimentos = {
   html() {
     const inv = S().investments, t = Calc.investTotals();
     const ir = inv.reduce((s, i) => s + irEstimate(i).value, 0);
-    return head('Investimentos', 'Carteira, rentabilidade e IR estimado', `<button class="btn btn-primary" id="newInv">${ic('plus')}Novo investimento</button>`) + `
+    const moves = S().tx.filter((x) => x.invest).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+    const mt = S().tx.filter((x) => x.invest && ym(x.date) === app.month).reduce((s, x) => s + (x.invest === 'aplicacao' ? x.amount : -x.amount), 0);
+    return head('Investimentos', 'Carteira, rentabilidade e IR estimado', `<button class="btn btn-outline" id="invOut">${ic('arrow-down-circle')}Resgatar</button><button class="btn btn-outline" id="newInv">${ic('plus')}Cadastrar ativo</button><button class="btn btn-primary" id="invIn">${ic('arrow-up-circle')}Aplicar</button>`) + `
       <div class="grid g-4" style="margin-bottom:24px">
         <div class="card"><div class="kpi"><div><h6 class="muted">Total aplicado</h6><div class="val">${money(t.invested)}</div></div>${ic('download')}</div></div>
         <div class="card primary"><div class="kpi"><div><h6>Valor atual</h6><div class="val">${money(t.current)}</div></div>${ic('trending-up')}</div></div>
@@ -1017,15 +1081,26 @@ ROUTES.investimentos = {
             <td class="num">${money(i.invested)}</td><td class="num">${money(i.current)}</td>
             <td class="num ${g >= 0 ? 'pos' : 'neg'}">${pct(i.invested ? g / i.invested * 100 : 0)}</td>
             <td class="num">${money(e.value)}<br><small class="muted">${e.rate}%</small></td>
-            <td class="act"><button class="btn-icon" data-ei="${i.id}">${ic('edit-2')}</button><button class="btn-icon" data-di="${i.id}">${ic('trash-2')}</button></td></tr>`; }).join('')}
+            <td class="act"><button class="btn-icon" data-ap="${i.id}" title="Aplicar mais">${ic('arrow-up-circle')}</button><button class="btn-icon" data-rs="${i.id}" title="Resgatar">${ic('arrow-down-circle')}</button><button class="btn-icon" data-ei="${i.id}" title="Editar">${ic('edit-2')}</button><button class="btn-icon" data-di="${i.id}" title="Excluir">${ic('trash-2')}</button></td></tr>`; }).join('')}
           </tbody></table>` : emptyBox('Cadastre seus investimentos para acompanhar a carteira.', 'trending-up')}</div>
           <div class="card-body muted" style="font-size:12px;border-top:1px solid var(--border)">IR estimado: renda fixa pela tabela regressiva (22,5% → 15% conforme o prazo), renda variável 15% sobre o ganho, LCI/LCA/poupança isentos. Valor aproximado — não substitui o informe da corretora.</div>
         </div>
         <div class="card"><div class="card-header"><h5>Distribuição da carteira</h5></div><div class="card-body"><div id="chInv"></div></div></div>
+      </div>
+      <div class="card" style="margin-top:24px"><div class="card-header"><h5>Aplicações e resgates</h5><span class="muted">Investido em ${monthName(app.month, true)}: <b class="${mt >= 0 ? 'pos' : 'neg'}">${money(mt)}</b></span></div>
+        <div class="table-wrap">${moves.length ? `<table class="tbl"><thead><tr><th>Data</th><th>Movimento</th><th>Conta</th><th class="num">Valor</th><th class="act"></th></tr></thead><tbody>
+          ${moves.map((x) => `<tr><td>${fdate(x.date)}</td><td class="desc-cell"><b>${esc(x.desc)}</b><small>${investLabel(x)}</small></td><td>${esc(accName(x))}</td>
+            <td class="num">${x.invest === 'aplicacao' ? '−' : '+'} ${money(x.amount)}</td><td class="act"><button class="btn-icon" data-dm="${x.id}" title="Excluir">${ic('trash-2')}</button></td></tr>`).join('')}
+          </tbody></table>` : emptyBox('Use “Aplicar” para tirar dinheiro de uma conta e mandar para um investimento. Não conta como despesa no orçamento.', 'arrow-up-circle')}</div>
       </div>`;
   },
   after() {
     $('#newInv').onclick = () => invForm();
+    $('#invIn').onclick = () => invMove('aplicacao');
+    $('#invOut').onclick = () => S().investments.length ? invMove('resgate') : toast('Nenhum investimento cadastrado');
+    $$('[data-ap]').forEach((b) => b.onclick = () => invMove('aplicacao', Store.get('investments', b.dataset.ap)));
+    $$('[data-rs]').forEach((b) => b.onclick = () => invMove('resgate', Store.get('investments', b.dataset.rs)));
+    $$('[data-dm]').forEach((b) => b.onclick = () => deleteTx(Store.get('tx', b.dataset.dm)));
     $$('[data-ei]').forEach((b) => b.onclick = () => invForm(Store.get('investments', b.dataset.ei)));
     $$('[data-di]').forEach((b) => b.onclick = () => confirmBox('Excluir este investimento?', () => Store.remove('investments', b.dataset.di)));
     const by = {}; S().investments.forEach((i) => by[i.type] = (by[i.type] || 0) + Number(i.current));
@@ -1033,6 +1108,47 @@ ROUTES.investimentos = {
     chart($('#chInv'), { chart: { type: 'donut', height: 300 }, series: Object.values(by), labels: Object.keys(by), colors: PALETTE, legend: { position: 'bottom' }, plotOptions: { pie: { donut: { size: '62%' } } } });
   },
 };
+const INV_TYPES = ['Renda fixa', 'Renda variável', 'Fundos', 'Tesouro Direto', 'LCI/LCA (isento)', 'Previdência', 'Criptomoedas', 'Outros'];
+/** Aplicação (sai da conta → investimento) ou resgate (investimento → conta). Gera uma movimentação que mexe no saldo da conta mas não conta como despesa/receita. */
+function invMove(kind, inv = null) {
+  const ap = kind === 'aplicacao';
+  const accs = S().accounts.filter((a) => !a.archived);
+  const invs = S().investments;
+  const sel = inv?.id || (ap ? '_new' : invs[0]?.id);
+  modal(ap ? 'Aplicar em investimento' : 'Resgatar investimento', `<div class="form-grid">
+    ${field(ap ? 'Sai da conta' : 'Entra na conta', `<select class="input" name="accountId" required>${optList(accs, accs[0]?.id)}</select>`, 'full')}
+    ${field('Investimento', `<select class="input" name="investmentId" id="invSel" required>${ap ? `<option value="_new" ${sel === '_new' ? 'selected' : ''}>+ Novo investimento</option>` : ''}${invs.map((x) => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${esc(x.name)} (${money(x.current)})</option>`).join('')}</select>`, 'full')}
+    ${ap ? field('Nome do novo ativo', `<input class="input" name="nvName" placeholder="Ex.: CDB Banco X 2028">`, 'full nv') + field('Tipo', `<select class="input" name="nvType">${INV_TYPES.map((t) => `<option>${t}</option>`).join('')}</select>`, 'nv') + field('Instituição', `<input class="input" name="nvBroker" placeholder="Ex.: XP INVEST">`, 'nv') : ''}
+    ${field('Valor (R$)', `<input class="input" name="amount" required inputmode="decimal" placeholder="0,00">`)}
+    ${field('Data', `<input class="input" type="date" name="date" required value="${todayStr()}">`)}
+    ${field('Observação', `<input class="input" name="notes" placeholder="Opcional">`, 'full')}
+  </div>`, {
+    saveLabel: ap ? 'Aplicar' : 'Resgatar',
+    onSave: (d) => {
+      const amount = round2(num(d.amount));
+      if (!(amount > 0)) { toast('Informe o valor'); return false; }
+      let target;
+      if (d.investmentId === '_new') {
+        if (!d.nvName.trim()) { toast('Informe o nome do ativo'); return false; }
+        target = Store.upsert('investments', { name: d.nvName.trim(), type: d.nvType, broker: d.nvBroker.trim(), invested: 0, current: 0, date: d.date });
+      } else target = Store.get('investments', d.investmentId);
+      if (!target) { toast('Escolha o investimento'); return false; }
+      if (!ap && amount > Number(target.current) + 0.005) { toast(`Valor maior que o saldo do investimento (${money(target.current)})`); return false; }
+      // no resgate, o valor aplicado cai na mesma proporção do saldo resgatado
+      const dInv = ap ? amount : round2(amount * (Number(target.current) ? Number(target.invested) / Number(target.current) : 1));
+      Store.upsert('investments', { ...target, invested: round2(Number(target.invested) + (ap ? dInv : -dInv)), current: round2(Number(target.current) + (ap ? amount : -amount)) }, target.name);
+      Store.upsert('tx', {
+        id: uid(), type: 'transferencia', invest: kind, investmentId: target.id, invInvested: dInv,
+        desc: `${ap ? 'Aplicação' : 'Resgate'} · ${target.name}`, amount, date: d.date, paidDate: d.date, paid: true, reconciled: false,
+        accountId: ap ? d.accountId : null, toAccountId: ap ? null : d.accountId,
+        cardId: null, categoryId: null, costCenterId: null, contactId: null, notes: d.notes || '',
+      });
+      toast(ap ? 'Aplicação registrada' : 'Resgate registrado');
+    },
+  });
+  const sync = () => $$('#modal .nv').forEach((el) => el.style.display = $('#invSel').value === '_new' ? '' : 'none');
+  if (ap) { $('#invSel').onchange = sync; sync(); }
+}
 function invForm(i = {}) {
   const types = ['Renda fixa', 'Renda variável', 'Fundos', 'Tesouro Direto', 'LCI/LCA (isento)', 'Previdência', 'Criptomoedas', 'Outros'];
   modal(i.id ? 'Editar investimento' : 'Novo investimento', `<div class="form-grid">

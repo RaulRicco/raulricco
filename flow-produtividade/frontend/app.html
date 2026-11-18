@@ -2,7 +2,15 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <meta name="theme-color" content="#111113">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Flow">
     <title>Flow Produtividade</title>
     <meta name="description" content="Sistema de produtividade pessoal e profissional: deep work, Big 3, Matriz de Eisenhower, metas trimestrais e dashboard de análise.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -323,6 +331,16 @@
             .week-strip { gap: 4px; } .day-e { display: none; }
             .area-grid b { font-size: 18px; }
             .ellipsis { max-width: 140px; }
+        }
+        /* iPhone (app instalado): notch e barra inferior */
+        .app { height: 100dvh; }
+        .topbar { padding-top: calc(14px + env(safe-area-inset-top)); padding-left: max(28px, env(safe-area-inset-left)); padding-right: max(28px, env(safe-area-inset-right)); }
+        .sidebar { padding-top: calc(18px + env(safe-area-inset-top)); padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+        .content { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+        .toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
+        @media (max-width: 900px) {
+            .topbar { padding-top: calc(12px + env(safe-area-inset-top)); padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+            .content { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
         }
     </style>
 </head>
@@ -865,6 +883,11 @@
     let startSection = 'today';
     try { startSection = localStorage.getItem('flow_section') || 'today'; } catch (e) {}
     go(TITLES[startSection] ? startSection : 'today');
+</script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+    }
 </script>
 </body>
 </html>
