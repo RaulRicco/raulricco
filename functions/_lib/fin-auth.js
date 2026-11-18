@@ -57,7 +57,10 @@ export async function clearFailures(env, ip) {
 /** Tela de login entregue no lugar do app quando não há sessão (autocontida: nada de /financeiro é exposto). */
 export function loginPage() {
   const html = `<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/financeiro/manifest.webmanifest"><link rel="apple-touch-icon" href="/financeiro/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#1c232f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Orçamento">
 <meta name="robots" content="noindex, nofollow"><title>Ricco Orçamento</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:#1c232f;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1d2630}

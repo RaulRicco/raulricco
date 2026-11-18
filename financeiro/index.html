@@ -2,7 +2,15 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="/financeiro/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/financeiro/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/financeiro/icons/icon-192.png">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Orçamento">
   <meta name="robots" content="noindex, nofollow">
   <title>Ricco Orçamento</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -67,5 +75,10 @@
 
   <script src="js/store.js"></script>
   <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/financeiro/sw.js', { scope: '/financeiro/' }).catch(() => {}));
+    }
+  </script>
 </body>
 </html>

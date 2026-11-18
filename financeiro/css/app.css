@@ -350,3 +350,12 @@ button.user:hover { background: #f3f4f9; }
   .filters .input { min-width: 0; flex: 1 1 140px; }
   .dropdown { width: calc(100vw - 32px); right: -60px; }
 }
+
+/* ---------- App instalado no celular (PWA): barra inferior do iPhone ---------- */
+.main { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+.sidebar-promo { margin-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
+.modal-bg { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+@media (max-width: 1024px) {
+  .main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+}
