@@ -1,7 +1,7 @@
 // Flow Produtividade — service worker
 // Rede primeiro para o "casco" do app (HTML/JS/CSS/ícones), cache como reserva offline.
 // Chamadas de API nunca passam pelo cache.
-const CACHE = 'flow-shell-v1';
+const CACHE = 'flow-shell-v2';
 const SHELL = [
   '/', '/app', '/manifest.webmanifest',
   '/js/date.js', '/js/auth.js', '/js/core.js', '/js/timer.js', '/js/tasks.js',

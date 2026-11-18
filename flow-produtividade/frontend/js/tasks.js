@@ -14,7 +14,7 @@ function initTasks(API) {
     let tasks = [];
     let pomodoroCount = {};   // task_id -> sessões de foco concluídas
     let dragSrcId = null;
-    let view = localStorageGet('flow_task_view') || 'list';
+    let view = Prefs.get('task_view', 'list');
     let newMit = false;
     const today = brDate();
 
@@ -336,16 +336,19 @@ function initTasks(API) {
     // Controles do formulário
     const areaSelect = document.getElementById('task-area');
     document.addEventListener('flow:areas-changed', () => {
-        const cur = areaSelect.value || (localStorageGet('flow_last_area') || 'work');
+        const cur = areaSelect.value || Prefs.get('last_area', 'work');
         areaSelect.innerHTML = areaOptions(cur);
         if (!areaSelect.value && areaSelect.options.length) areaSelect.selectedIndex = 0;
         render();
     });
-    areaSelect.addEventListener('change', () => localStorageSet('flow_last_area', areaSelect.value));
+    areaSelect.addEventListener('change', () => Prefs.set('last_area', areaSelect.value));
+    document.addEventListener('flow:prefs-changed', e => {
+        if (e.detail.includes('task_view')) { view = Prefs.get('task_view', 'list'); render(); }
+    });
     mitToggle.addEventListener('click', () => setMit(!newMit));
     document.querySelectorAll('[data-task-view]').forEach(btn => btn.addEventListener('click', () => {
         view = btn.dataset.taskView;
-        localStorageSet('flow_task_view', view);
+        Prefs.set('task_view', view, { delay: 0 });
         render();
     }));
     addBtn.addEventListener('click', addTask);

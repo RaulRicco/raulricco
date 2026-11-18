@@ -17,14 +17,44 @@ function initTimer(API) {
     let endAt = null;
     let focusToday = 0;
     let lastSessionId = null;
+    let applying = false;        // aplicando estado vindo de outro aparelho (não regrava)
+    let wantedTaskId = '';       // tarefa do estado sincronizado, aplicada quando a lista carregar
 
-    // Cronômetro (contador livre) — persiste no navegador para sobreviver a recarregamentos
-    const SW_KEY = 'flow_stopwatch';
+    // Cronômetro (contador livre) — fica na conta: continua em qualquer aparelho e após recarregar
     let sw = loadSw();
-    function loadSw() {
-        try { return JSON.parse(localStorage.getItem(SW_KEY) || 'null') || { startAt: null, accMs: 0 }; } catch (e) { return { startAt: null, accMs: 0 }; }
+    function loadSw() { return { startAt: null, accMs: 0, ...(Prefs.get('stopwatch') || {}) }; }
+    function persistSw() { Prefs.set('stopwatch', { ...sw }, { delay: 0 }); }
+
+    // Estado do relógio (modo, rodando até quando, tempo restante, tarefa) — também na conta
+    function pomodoroState() {
+        const base = { mode: currentMode, taskId: taskSelect.value || null };
+        if (currentMode === 'stopwatch') return base;
+        return isRunning ? { ...base, endAt } : { ...base, left: timeLeft };
     }
-    function persistSw() { try { localStorage.setItem(SW_KEY, JSON.stringify(sw)); } catch (e) {} }
+    function persistState() { if (!applying) Prefs.set('pomodoro', pomodoroState(), { delay: 0 }); }
+    function applyState(st) {
+        st = st || { mode: 'focus' };
+        applying = true;
+        clearInterval(intervalId);
+        currentMode = ['focus', 'shortBreak', 'longBreak', 'stopwatch'].includes(st.mode) ? st.mode : 'focus';
+        isRunning = false; endAt = null;
+        if (st.taskId !== undefined) {
+            wantedTaskId = st.taskId || '';
+            if ([...taskSelect.options].some(o => o.value === wantedTaskId)) taskSelect.value = wantedTaskId;
+        }
+        if (currentMode === 'stopwatch') {
+            if (sw.startAt) intervalId = setInterval(updateDisplay, 500);
+        } else if (st.endAt) {
+            isRunning = true; endAt = st.endAt;
+            timeLeft = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+            intervalId = setInterval(tick, 250);
+        } else {
+            timeLeft = Number.isFinite(st.left) && st.left > 0 ? Math.min(st.left, modeTotal(currentMode)) : modeTotal(currentMode);
+        }
+        applying = false;
+        updateDisplay();
+        if (isRunning && timeLeft <= 0) tick();
+    }
     const swElapsed = () => sw.accMs + (sw.startAt ? Date.now() - sw.startAt : 0);
     function fmtClock(ms) {
         const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
@@ -90,7 +120,8 @@ function initTimer(API) {
     async function saveSession(mode, minutes) {
         const taskId = mode === 'focus' ? (taskSelect.value || null) : null;
         const task = taskId && window.FlowTasks ? window.FlowTasks.get().find(t => t.id === taskId) : null;
-        const area = mode === 'focus' ? (task && task.area ? task.area : areaSelect.value || null) : null;
+        // A área escolhida no relógio vale; a da tarefa só entra se nenhuma foi escolhida
+        const area = mode === 'focus' ? (areaSelect.value || (task && task.area) || null) : null;
         try {
             const res = await apiRequest(`${API}/sessions`, {
                 method: 'POST',
@@ -125,25 +156,32 @@ function initTimer(API) {
     }));
     $('quality-skip').addEventListener('click', () => qualityBox.classList.remove('show'));
 
-    function onSessionComplete() {
+    let completing = false;
+    async function onSessionComplete() {
+        if (completing) return;
+        completing = true;
         clearInterval(intervalId);
-        isRunning = false;
-        endAt = null;
+        const finished = currentMode;
+        const expect = Prefs.get('pomodoro');
+        isRunning = false; endAt = null;
+        const next = finished === 'focus' ? ((focusToday + 1) % 4 === 0 ? 'longBreak' : 'shortBreak') : 'focus';
+        const nextState = { mode: next, taskId: taskSelect.value || null, left: modeTotal(next) };
+        // Só um aparelho registra a sessão: quem conseguir virar o estado primeiro
+        const won = await Prefs.cas('pomodoro', expect, nextState);
+        completing = false;
         playSound();
-        if (currentMode === 'focus') {
+        if (!won) { applyState(Prefs.get('pomodoro')); return; }
+        if (finished === 'focus') {
             focusToday++;
             updateSessionsUI();
             saveSession('focus');
             showQuality();
             notify('Sessão de foco concluída. Hora da pausa!');
-            currentMode = focusToday % 4 === 0 ? 'longBreak' : 'shortBreak';
         } else {
-            saveSession(currentMode);
+            saveSession(finished);
             notify('Pausa encerrada. Bora focar!');
-            currentMode = 'focus';
         }
-        timeLeft = modeTotal(currentMode);
-        updateDisplay();
+        applying = true; applyState(nextState); applying = false;
     }
 
     function tick() {
@@ -164,8 +202,10 @@ function initTimer(API) {
         }
         if (isRunning) {
             clearInterval(intervalId);
+            timeLeft = Math.max(0, Math.round((endAt - Date.now()) / 1000));
             isRunning = false;
             endAt = null;
+            persistState();
             updateDisplay();
             return;
         }
@@ -173,6 +213,7 @@ function initTimer(API) {
         isRunning = true;
         endAt = Date.now() + timeLeft * 1000;
         intervalId = setInterval(tick, 250);
+        persistState();
         updateDisplay();
     }
 
@@ -186,6 +227,7 @@ function initTimer(API) {
         endAt = null;
         currentMode = mode;
         timeLeft = modeTotal(mode);
+        persistState();
         updateDisplay();
     }
 
@@ -201,7 +243,14 @@ function initTimer(API) {
         const minutes = Math.round(swElapsed() / 60000);
         if (minutes < 1) { toast('Menos de 1 minuto — nada para salvar ainda.'); return; }
         if (!taskSelect.value && !areaSelect.value) { toast('Escolha uma área ou tarefa para lançar o tempo.'); areaSelect.focus(); return; }
-        sw = { startAt: null, accMs: 0 }; persistSw();
+        const before = Prefs.get('stopwatch');
+        const cleared = { startAt: null, accMs: 0, area: sw.area };
+        if (!(await Prefs.cas('stopwatch', before, cleared))) {
+            sw = loadSw(); updateDisplay();
+            toast('Esse tempo já foi salvo em outro aparelho.');
+            return;
+        }
+        sw = cleared;
         clearInterval(intervalId);
         playSound();
         await saveSession('focus', minutes);
@@ -218,6 +267,7 @@ function initTimer(API) {
     function fillTaskSelect(tasks) {
         const current = taskSelect.value;
         const pending = tasks.filter(t => !t.completed);
+        if (!current && wantedTaskId) setTimeout(() => { if ([...taskSelect.options].some(o => o.value === wantedTaskId)) taskSelect.value = wantedTaskId; }, 0);
         const mits = pending.filter(t => t.is_mit), rest = pending.filter(t => !t.is_mit);
         const opt = t => `<option value="${t.id}">${t.is_mit ? '★ ' : ''}${escapeHtml(t.text)}</option>`;
         taskSelect.innerHTML = '<option value="">— Sem tarefa vinculada —</option>' +
@@ -228,18 +278,22 @@ function initTimer(API) {
     document.addEventListener('flow:tasks-changed', e => fillTaskSelect(e.detail));
     function fillAreaSelect() {
         let cur = areaSelect.value;
-        try { cur = cur || sw.area || localStorage.getItem('flow_timer_area') || ''; } catch (e) {}
+        cur = cur || sw.area || Prefs.get('timer_area', '') || '';
         areaSelect.innerHTML = areaOptions(cur, { includeNone: true });
         if ([...areaSelect.options].some(o => o.value === cur)) areaSelect.value = cur;
     }
     document.addEventListener('flow:areas-changed', fillAreaSelect);
+    // A área pode ser trocada a qualquer momento, inclusive com o relógio rodando
     areaSelect.addEventListener('change', () => {
         sw.area = areaSelect.value; persistSw();
-        try { localStorage.setItem('flow_timer_area', areaSelect.value); } catch (e) {}
+        Prefs.set('timer_area', areaSelect.value, { delay: 0 });
+        if (areaSelect.value) toast(`Área do relógio: ${areaInfo(areaSelect.value).name}`);
     });
     taskSelect.addEventListener('change', () => {
+        wantedTaskId = taskSelect.value;
         const t = window.FlowTasks?.get().find(x => x.id === taskSelect.value);
-        if (t && t.area) areaSelect.value = t.area;
+        if (t && t.area) { areaSelect.value = t.area; sw.area = t.area; persistSw(); Prefs.set('timer_area', t.area, { delay: 0 }); }
+        persistState();
     });
     document.addEventListener('flow:start-area', e => {
         areaSelect.value = e.detail; sw.area = e.detail; persistSw();
@@ -248,10 +302,10 @@ function initTimer(API) {
         if (!sw.startAt) toggle();
     });
     document.addEventListener('flow:focus-task', e => {
-        taskSelect.value = e.detail;
+        taskSelect.value = e.detail; wantedTaskId = e.detail;
         const t = window.FlowTasks?.get().find(x => x.id === e.detail);
-        if (t && t.area) areaSelect.value = t.area;
-        if (currentMode !== 'focus' && currentMode !== 'stopwatch') setMode('focus');
+        if (t && t.area) { areaSelect.value = t.area; Prefs.set('timer_area', t.area, { delay: 0 }); }
+        if (currentMode !== 'focus' && currentMode !== 'stopwatch') setMode('focus'); else persistState();
     });
 
     // Configurações
@@ -289,9 +343,22 @@ function initTimer(API) {
 
     window.FlowTimer = { setFocusCount(n) { focusToday = n; updateSessionsUI(); } };
 
-    // Retoma o cronômetro se ele estava rodando antes de recarregar a página
-    if (sw.startAt || sw.accMs) setMode('stopwatch');
-    updateDisplay();
+    // Mudanças feitas em outro aparelho
+    document.addEventListener('flow:prefs-changed', e => {
+        const keys = e.detail;
+        if (keys.includes('timer_settings')) {
+            settings = getSettings();
+            updateSessionsUI();
+            if (!isRunning && currentMode !== 'stopwatch') { timeLeft = modeTotal(currentMode); updateDisplay(); }
+        }
+        if (keys.includes('stopwatch')) { sw = loadSw(); if (sw.area && !areaSelect.value) areaSelect.value = sw.area; }
+        if (keys.includes('timer_area')) { const a = Prefs.get('timer_area', ''); if ([...areaSelect.options].some(o => o.value === a)) areaSelect.value = a; }
+        if (keys.includes('pomodoro') && !completing) applyState(Prefs.get('pomodoro'));
+        else if (keys.includes('stopwatch') && currentMode === 'stopwatch') applyState({ mode: 'stopwatch' });
+    });
+
+    // Retoma o relógio/cronômetro do jeito que estava (neste ou em outro aparelho)
+    applyState(Prefs.get('pomodoro') || ((sw.startAt || sw.accMs) ? { mode: 'stopwatch' } : null));
     updateSessionsUI();
 }
 

@@ -109,6 +109,16 @@
         .quality-opts button, .scale button { width: 38px; height: 38px; border-radius: 10px; background: var(--surface-3); font-weight: 600; }
         .quality-opts button:hover, .scale button:hover { background: var(--border); }
         .quality-opts button.on, .scale button.on { background: var(--accent-2); color: #fff; }
+        .sess-list { width: 100%; margin-top: 14px; font-size: 13px; }
+        .sess-list summary { cursor: pointer; color: var(--muted); font-size: 12px; list-style: none; display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+        .sess-list summary::-webkit-details-marker { display: none; }
+        .sess-list summary::after { content: '\f078'; font: 900 10px 'Font Awesome 6 Free'; transition: transform .2s; }
+        .sess-list[open] summary::after { transform: rotate(180deg); }
+        .sess-list ul { list-style: none; margin-top: 6px; display: grid; gap: 6px; }
+        .sess-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 132px); gap: 8px; align-items: center; background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 10px; }
+        .sess-row .t { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+        .sess-row .d { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sess-row select { padding: 6px 8px; font-size: 12px; min-width: 0; width: 100%; }
         .progress { height: 6px; background: var(--surface-3); border-radius: 99px; overflow: hidden; }
         .progress > div { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s; width: 0; }
 
@@ -327,10 +337,36 @@
             .kpi-row, .kpi-row.k5 { grid-template-columns: 1fr 1fr; }
             .matrix { grid-template-columns: minmax(0, 1fr); }
             .hide-sm { display: none; }
-            .task-meta .focus-btn { display: none; }
+            /* Tarefas: texto inteiro na 1ª linha, etiquetas/botões quebrando na 2ª */
+            .task-item { flex-wrap: wrap; row-gap: 8px; padding: 10px; }
+            .task-text { flex: 1 1 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+            .task-meta { flex: 1 1 100%; flex-wrap: wrap; gap: 6px; }
+            .task-meta .icon-btn { width: 34px; height: 30px; }
+            .chip { padding: 4px 9px; }
+            .chip-select { max-width: 120px; }
+            /* Dashboard */
+            .heatmap { grid-template-rows: repeat(7, auto); grid-auto-columns: minmax(0, 1fr); gap: 2px; overflow: visible; }
+            .heatmap .hm-cell { width: 100%; height: auto; aspect-ratio: 1; border-radius: 2px; }
+            th { padding: 6px 4px; font-size: 11px; white-space: normal; }
+            td { padding: 7px 4px; font-size: 12px; }
+            #top-tasks td.ellipsis { max-width: 150px; }
+            .area-row { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; }
+            .area-row .area-name { grid-column: 1 / -1; }
+            .seg { display: flex; max-width: 100%; }
+            .seg button { flex: 1 1 auto; padding: 6px 8px; white-space: normal; line-height: 1.2; }
+            .hm-row { flex-wrap: wrap; }
+            .hm-row .input { width: 64px; }
+            /* Sessões de hoje */
+            .sess-row { grid-template-columns: auto minmax(0, 1fr); }
+            .sess-row select { grid-column: 1 / -1; }
             .week-strip { gap: 4px; } .day-e { display: none; }
             .area-grid b { font-size: 18px; }
             .ellipsis { max-width: 140px; }
+        }
+        @media (max-width: 380px) {
+            th { padding: 5px 3px; font-size: 10.5px; }
+            td { padding: 6px 3px; font-size: 11px; }
+            .content { padding-left: 12px; padding-right: 12px; }
         }
         /* iPhone (app instalado): notch e barra inferior */
         .app { height: 100dvh; }
@@ -407,7 +443,7 @@
                                 <div style="width:100%;margin-top:18px">
                                     <label class="field-label" for="timer-task">Focando em</label>
                                     <select id="timer-task" class="input"><option value="">— Sem tarefa vinculada —</option></select>
-                                    <label class="field-label" for="timer-area" style="margin-top:10px">Área <span class="muted">(usa a da tarefa, se houver)</span></label>
+                                    <label class="field-label" for="timer-area" style="margin-top:10px">Área <span class="muted">(vem da tarefa — pode trocar a qualquer momento)</span></label>
                                     <select id="timer-area" class="input"><option value="">— Sem área —</option></select>
                                     <div style="text-align:right;margin-top:8px"><button class="link-btn" id="manual-log-btn"><i class="fas fa-plus"></i> Lançar tempo manualmente</button></div>
                                 </div>
@@ -421,6 +457,10 @@
                                 <div style="width:100%;margin-top:18px">
                                     <div style="display:flex;justify-content:space-between" class="muted small"><span>Sessões hoje</span><span id="sessions-count">0/8</span></div>
                                     <div class="progress" style="margin-top:6px"><div id="sessions-progress"></div></div>
+                                    <details class="sess-list" id="today-sessions-box" hidden>
+                                        <summary><span>Sessões de hoje · trocar área</span><span id="today-sessions-n"></span></summary>
+                                        <ul id="today-sessions"></ul>
+                                    </details>
                                 </div>
                             </div>
                         </div>
@@ -462,7 +502,7 @@
                                 </div>
                             </div>
                             <div class="add-row">
-                                <input type="text" id="new-task-input" class="input" placeholder="Capture uma tarefa… (Enter para adicionar)">
+                                <input type="text" id="new-task-input" class="input" placeholder="Capture uma tarefa…" title="Enter para adicionar">
                                 <button id="add-task-btn" class="btn"><i class="fas fa-plus"></i><span class="hide-sm">Adicionar</span></button>
                             </div>
                             <div class="add-opts">
@@ -851,8 +891,40 @@
             if (window.FlowTasks) window.FlowTasks.setPomodoroCounts(counts);
             window.FlowTimer.setFocusCount(todaySessions.filter(s => s.mode === 'focus').length);
             renderToday();
+            renderSessionList();
         } catch (e) {}
     }
+    // Sessões de foco de hoje, com a área editável (para corrigir área marcada errada)
+    function renderSessionList() {
+        const focus = todaySessions.filter(s => s.mode === 'focus').sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+        const box = document.getElementById('today-sessions-box');
+        box.hidden = !focus.length;
+        document.getElementById('today-sessions-n').textContent = focus.length;
+        const taskById = {};
+        (window.FlowTasks ? window.FlowTasks.get() : []).forEach(t => { taskById[t.id] = t; });
+        (lastData?.tasks || []).forEach(t => { taskById[t.id] = taskById[t.id] || t; });
+        const hhmm = ts => { try { return new Date(String(ts).replace(' ', 'T') + 'Z').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }); } catch (e) { return ''; } };
+        const ul = document.getElementById('today-sessions');
+        ul.innerHTML = focus.map(s => {
+            const t = s.task_id && taskById[s.task_id];
+            return `<li class="sess-row"><span class="t">${hhmm(s.created_at)}</span>
+                <span class="d" title="${escapeHtml(t ? t.text : '')}"><b>${fmtMinutes(s.duration_minutes)}</b>${t ? ' · ' + escapeHtml(t.text) : ''}</span>
+                <select class="input" data-sess="${escapeHtml(s.id)}" aria-label="Área da sessão">${areaOptions(sessionArea(s, taskById), { includeNone: true })}</select></li>`;
+        }).join('');
+        ul.querySelectorAll('select[data-sess]').forEach(sel => sel.addEventListener('change', async () => {
+            sel.disabled = true;
+            try {
+                const res = await apiRequest(`${FLOW_API}/sessions/${sel.dataset.sess}`, { method: 'PATCH', body: JSON.stringify({ area: sel.value || null }) });
+                if (res && res.ok) {
+                    toast(sel.value ? `Sessão movida para ${areaInfo(sel.value).name}.` : 'Área removida da sessão.');
+                    document.dispatchEvent(new CustomEvent('flow:session-logged', { detail: { mode: 'area-fix' } }));
+                } else toast('Não foi possível trocar a área.');
+            } catch (e) { toast('Sem conexão — tente de novo.'); }
+            sel.disabled = false;
+        }));
+    }
+    document.addEventListener('flow:areas-changed', () => { if (todaySessions.length) renderSessionList(); });
+
     function renderToday() {
         const tasks = window.FlowTasks ? window.FlowTasks.get() : [];
         const [d] = buildDays({ sessions: todaySessions, tasks, reviews: [] }, [brDate()]);
@@ -872,17 +944,37 @@
     document.addEventListener('flow:tasks-changed', () => { renderToday(); Analytics.invalidate(); });
     document.addEventListener('flow:session-logged', () => { setTimeout(loadSessions, 400); Analytics.invalidate(); });
 
-    // Init
-    initTimer(FLOW_API);
-    initTasks(FLOW_API);
-    Analytics.bind();
-    Review.bind();
-    AreasUI.bind();
-    Integrations.bind();
-    FlowAreas.load().then(loadSessions);
-    let startSection = 'today';
-    try { startSection = localStorage.getItem('flow_section') || 'today'; } catch (e) {}
-    go(TITLES[startSection] ? startSection : 'today');
+    // Init — primeiro busca as preferências da conta (o que foi configurado em outro aparelho)
+    (async () => {
+        await Promise.race([Prefs.load(), new Promise(r => setTimeout(r, 2500))]);
+        initTimer(FLOW_API);
+        initTasks(FLOW_API);
+        Analytics.bind();
+        Review.bind();
+        AreasUI.bind();
+        Integrations.bind();
+        FlowAreas.load().then(loadSessions);
+        let startSection = 'today';
+        try { startSection = localStorage.getItem('flow_section') || 'today'; } catch (e) {}
+        go(TITLES[startSection] ? startSection : 'today');
+
+        // Ao voltar para o app (ou trocar de aba/aparelho), traz o que mudou nos outros aparelhos
+        let lastSync = Date.now();
+        async function syncAll(full) {
+            lastSync = Date.now();
+            await Prefs.load();
+            if (full) { window.FlowTasks?.reload(); loadSessions(); }
+        }
+        const onBack = () => { if (document.visibilityState === 'visible' && Date.now() - lastSync > 5000) syncAll(true); };
+        document.addEventListener('visibilitychange', onBack);
+        window.addEventListener('focus', onBack);
+        window.addEventListener('pageshow', e => { if (e.persisted) onBack(); });
+        setInterval(() => { if (document.visibilityState === 'visible') syncAll(false); }, 60000);
+        document.addEventListener('flow:prefs-changed', e => {
+            if (e.detail.some(k => k.startsWith('weekly_check:')) && document.getElementById('section-weekly').classList.contains('active')) Review.renderWeekly();
+            if (e.detail.includes('timer_settings')) renderToday();
+        });
+    })();
 </script>
 <script>
     if ('serviceWorker' in navigator) {

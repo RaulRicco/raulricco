@@ -4,6 +4,7 @@ import { handleGetSessions, handleCreateSession, handleUpdateSession } from './s
 import { handleGetGoals, handleCreateGoal, handleUpdateGoal, handleDeleteGoal } from './goals.js';
 import { handleGetAreas, handleCreateArea, handleUpdateArea } from './areas.js';
 import { getStats, getAnalytics, getReview, upsertReview, getUserById, getTasksRange, deleteSession, getSessionsRange } from './db.js';
+import { handleGetPrefs, handlePutPref } from './prefs.js';
 import { TOKEN_PREFIX, userFromApiToken, handleListTokens, handleCreateToken, handleDeleteToken } from './tokens.js';
 
 function json(data, status = 200) {
@@ -114,6 +115,11 @@ export default {
           if (method === 'PATCH') response = await handleUpdateSession(request, env, userId, sessionId);
           else if (method === 'DELETE') response = (await deleteSession(env.DB, sessionId, userId)) ? json({ ok: true }) : json({ error: 'Sessão não encontrada' }, 404);
           else response = json({ error: 'Método não permitido' }, 405);
+        } else if (path === '/prefs') {
+          response = method === 'GET' ? await handleGetPrefs(env, userId) : json({ error: 'Método não permitido' }, 405);
+        } else if (path.startsWith('/prefs/')) {
+          const key = decodeURIComponent(path.slice(7));
+          response = method === 'PUT' ? await handlePutPref(request, env, userId, key) : json({ error: 'Método não permitido' }, 405);
         } else if (path === '/reviews') {
           const date = url.searchParams.get('date');
           if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) response = json({ error: 'date inválida' }, 400);

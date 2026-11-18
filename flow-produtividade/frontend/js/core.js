@@ -3,14 +3,95 @@ const FLOW_API = window.FLOW_API_URL || 'https://flow-produtividade-api.raulricc
 
 const DEFAULT_SETTINGS = { focusTime: 25, shortBreak: 5, longBreak: 15, sessionsCount: 8, dailyDeepHours: 3 };
 
+// Preferências sincronizadas na conta (iguais em qualquer aparelho logado).
+// Cópia local para abrir rápido/offline; gravação no servidor com pequeno atraso.
+const Prefs = (() => {
+    const CACHE = 'flow_prefs_cache';
+    // Chaves antigas que ficavam só no aparelho → enviadas para a conta na primeira vez
+    const LEGACY = { flow_timer_settings: 'timer_settings', flow_stopwatch: 'stopwatch', flow_timer_area: 'timer_area', flow_task_view: 'task_view', flow_last_area: 'last_area' };
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(CACHE) || '{}') || {}; } catch (e) {}
+    const pending = {};           // chave → timeout de gravação ainda não enviada
+    const persist = () => { try { localStorage.setItem(CACHE, JSON.stringify(data)); } catch (e) {} };
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const emit = keys => keys.length && document.dispatchEvent(new CustomEvent('flow:prefs-changed', { detail: keys }));
+
+    async function put(key, body) {
+        return apiRequest(`${FLOW_API}/prefs/${encodeURIComponent(key)}`, { method: 'PUT', body: JSON.stringify(body) });
+    }
+    function flush(key) {
+        clearTimeout(pending[key]); delete pending[key];
+        put(key, { value: data[key] === undefined ? null : data[key] }).catch(() => {});
+    }
+
+    async function load() {
+        let fresh;
+        try {
+            const res = await apiRequest(`${FLOW_API}/prefs`);
+            if (!res || !res.ok) return false;
+            fresh = (await res.json()).prefs || {};
+        } catch (e) { return false; }
+        // Migração única dos valores que estavam só neste aparelho
+        for (const [old, key] of Object.entries(LEGACY)) {
+            let raw = null;
+            try { raw = localStorage.getItem(old); } catch (e) {}
+            if (raw === null) continue;
+            if (fresh[key] === undefined) {
+                let v = raw; try { v = JSON.parse(raw); } catch (e) {}
+                fresh[key] = v; put(key, { value: v }).catch(() => {});
+            }
+            try { localStorage.removeItem(old); } catch (e) {}
+        }
+        const changed = [];
+        for (const k of new Set([...Object.keys(data), ...Object.keys(fresh)])) {
+            if (pending[k]) continue;                       // mudança local ainda não enviada vence
+            if (!same(data[k], fresh[k])) { changed.push(k); if (fresh[k] === undefined) delete data[k]; else data[k] = fresh[k]; }
+        }
+        persist();
+        emit(changed);
+        return true;
+    }
+
+    function get(key, fallback = null) { return data[key] === undefined || data[key] === null ? fallback : data[key]; }
+
+    function set(key, value, { delay = 400 } = {}) {
+        if (same(data[key], value)) return;
+        data[key] = value; persist();
+        clearTimeout(pending[key]);
+        pending[key] = setTimeout(() => flush(key), delay);
+    }
+
+    // Grava só se o valor no servidor ainda for "expect". Retorna false se outro aparelho mudou antes
+    // (e já atualiza o valor local para o atual). Sem conexão, segue em frente localmente.
+    async function cas(key, expect, value) {
+        clearTimeout(pending[key]); delete pending[key];
+        try {
+            const res = await put(key, { value, expect: expect === undefined ? null : expect });
+            if (res && res.status === 409) {
+                const cur = (await res.json()).current;
+                if (cur === null || cur === undefined) delete data[key]; else data[key] = cur;
+                persist();
+                return false;
+            }
+        } catch (e) {}
+        data[key] = value; persist();
+        return true;
+    }
+
+    // Envia o que estiver pendente ao sair/esconder o app
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') Object.keys(pending).forEach(flush);
+    });
+
+    return { load, get, set, cas };
+})();
+
 function getSettings() {
-    let s = null;
-    try { s = JSON.parse(localStorage.getItem('flow_timer_settings') || 'null'); } catch (e) {}
-    return { ...DEFAULT_SETTINGS, ...(s || {}) };
+    return { ...DEFAULT_SETTINGS, ...(Prefs.get('timer_settings') || {}) };
 }
 
 function saveSettings(s) {
-    try { localStorage.setItem('flow_timer_settings', JSON.stringify(s)); } catch (e) {}
+    Prefs.set('timer_settings', s, { delay: 0 });
 }
 
 // Matriz de Eisenhower
@@ -208,7 +289,7 @@ function toast(msg) {
 }
 
 Object.assign(window, {
-    FLOW_API, getSettings, saveSettings, QUADRANTS, quadrantOf, FlowAreas, areaInfo, areaOptions, AREA_COLORS, AREA_ICONS,
+    FLOW_API, Prefs, getSettings, saveSettings, QUADRANTS, quadrantOf, FlowAreas, areaInfo, areaOptions, AREA_COLORS, AREA_ICONS,
     PERIOD_LABEL, periodDates, sessionArea, minutesByArea, sessionStartHourBR,
     fmtMinutes, weekdayOf, fmtDateShort, dayScore, buildDays, lastNDates, escapeHtml, toast,
 });

@@ -122,15 +122,19 @@ const Review = (() => {
         $('week-wins').innerHTML = list('wins') || '<li class="empty">Registre vitórias no shutdown diário.</li>';
         $('week-blockers').innerHTML = list('blockers') || '<li class="empty">Nenhum bloqueio registrado.</li>';
 
-        // Checklist da revisão (conveniência local, por semana)
-        const key = 'flow_weekly_check_' + dates[0];
-        let checked = [];
-        try { checked = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) {}
+        // Checklist da semana — fica na conta (mesmo progresso em qualquer aparelho)
+        const key = 'weekly_check:' + dates[0];
+        let checked = Prefs.get(key, null);
+        if (!checked) {
+            try { checked = JSON.parse(localStorage.getItem('flow_weekly_check_' + dates[0]) || 'null'); } catch (e) {}
+            if (checked) { Prefs.set(key, checked, { delay: 0 }); try { localStorage.removeItem('flow_weekly_check_' + dates[0]); } catch (e) {} }
+            checked = checked || [];
+        }
         $('week-checklist').innerHTML = CHECKLIST.map((item, i) => `
             <label class="check-row"><input type="checkbox" data-i="${i}" ${checked.includes(i) ? 'checked' : ''}><span>${item}</span></label>`).join('');
         $('week-checklist').querySelectorAll('input').forEach(cb => cb.addEventListener('change', () => {
             const now = [...$('week-checklist').querySelectorAll('input:checked')].map(x => +x.dataset.i);
-            try { localStorage.setItem(key, JSON.stringify(now)); } catch (e) {}
+            Prefs.set(key, now);
             $('week-check-count').textContent = `${now.length}/${CHECKLIST.length}`;
         }));
         $('week-check-count').textContent = `${checked.length}/${CHECKLIST.length}`;

@@ -120,6 +120,10 @@ export async function updateSession(db, id, userId, fields) {
     if (q >= 1 && q <= 5) { sets.push('focus_quality = ?'); vals.push(q); }
   }
   if (fields.task_id !== undefined) { sets.push('task_id = ?'); vals.push(fields.task_id || null); }
+  if (fields.area !== undefined) {
+    if (fields.area === null || fields.area === '') { sets.push('area = ?'); vals.push(null); }
+    else if (typeof fields.area === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(fields.area)) { sets.push('area = ?'); vals.push(fields.area); }
+  }
   if (sets.length === 0) return null;
   vals.push(id, userId);
   await db.prepare(`UPDATE pomodoro_sessions SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`).bind(...vals).run();

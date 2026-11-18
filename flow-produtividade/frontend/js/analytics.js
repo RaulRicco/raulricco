@@ -363,9 +363,9 @@ const Analytics = (() => {
         const agg = {};
         inRange.forEach(s => { agg[s.task_id] = agg[s.task_id] || { t: s._task, min: 0, n: 0 }; agg[s.task_id].min += s.duration_minutes; agg[s.task_id].n++; });
         const top = Object.values(agg).sort((a, b) => b.min - a.min).slice(0, 6);
-        document.getElementById('top-tasks').innerHTML = top.length ? `<table><thead><tr><th>Tarefa</th><th>Quadrante</th><th>Foco</th><th>🍅</th></tr></thead><tbody>${top.map(r => `
+        document.getElementById('top-tasks').innerHTML = top.length ? `<table><thead><tr><th>Tarefa</th><th><span class="hide-sm">Quadrante</span></th><th>Foco</th><th>🍅</th></tr></thead><tbody>${top.map(r => `
             <tr><td class="ellipsis">${r.t.completed ? '<i class="fas fa-check text-good"></i> ' : ''}${escapeHtml(r.t.text)}</td>
-            <td><span class="dot" style="background:${QUADRANTS[quadrantOf(r.t)].color}"></span>${QUADRANTS[quadrantOf(r.t)].label}</td>
+            <td title="${QUADRANTS[quadrantOf(r.t)].label}"><span class="dot" style="background:${QUADRANTS[quadrantOf(r.t)].color}"></span><span class="hide-sm">${QUADRANTS[quadrantOf(r.t)].label}</span></td>
             <td>${fmtMinutes(r.min)}</td><td>${r.n}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nenhuma sessão vinculada a tarefas no período.</p>';
     }
 
